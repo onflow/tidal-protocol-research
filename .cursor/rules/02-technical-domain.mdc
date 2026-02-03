@@ -1,0 +1,116 @@
+---
+description: Technical domain knowledge structure for Tidal Protocol audit
+alwaysApply: true
+---
+
+# Technical Domain Structure
+
+This rule defines how technical knowledge is organized in `memory/TECHNICAL.md`.
+
+## Knowledge Categories
+
+### Terminology
+Agreed-upon definitions for protocol-specific terms.
+
+Format:
+```
+| Term | Definition | Source | Status |
+```
+
+Status: `verified` | `unverified` | `disputed`
+
+### Core Formulas
+Mathematical expressions central to the protocol.
+
+Format per formula:
+```
+### [Formula Name]
+- **Expression**: LaTeX or code
+- **Variables**: Define each
+- **Code ref**: `file.py:line` 
+- **Derivation**: Brief or reference
+- **Status**: verified | unverified | disputed
+```
+
+### Algorithmic Abstractions
+Pseudo-code capturing core logic, stripped of implementation details.
+
+Format:
+```
+### [Algorithm Name]
+**Purpose**: One line
+**Inputs**: List
+**Outputs**: List
+**Core Logic**:
+1. Step (invariant/assertion)
+2. Step
+...
+**Code ref**: `file.py:function`
+```
+
+### Assumptions
+Stated assumptions about the system, to be validated or invalidated.
+
+Format:
+```
+| Assumption | Basis | Status | Notes |
+```
+
+Status: `stated` | `validated` | `invalidated`
+
+### Code Map
+Key files and their purposes for quick navigation.
+
+Format:
+```
+| File | Purpose | Key Functions |
+```
+
+## Technical Domains for This Audit
+
+Based on codebase exploration, the following domains require abstraction:
+
+1. **Uniswap V3 Mathematics**
+   - Q64.96 fixed-point arithmetic
+   - Tick-to-price: `price = 1.0001^tick`
+   - Liquidity calculations
+   - Cross-tick swap mechanics
+
+2. **Health Factor System**
+   - Tri-health factor architecture (initial, rebalancing, target)
+   - Collateral factor vs liquidation threshold
+   - Debt cap calculations
+
+3. **MOET Stablecoin**
+   - Bond auction mechanics
+   - EMA-based interest rates
+   - Reserve ratio management (10% target)
+   - Redeemer contract imbalance fees
+
+4. **Yield Token System**
+   - Time-based yield accrual: `value = initial × (1 + APR)^(t/525600)`
+   - Portfolio management (FIFO/LIFO)
+   - Slippage-aware rebalancing
+
+5. **Agent Decision Logic**
+   - Monte Carlo variation
+   - Rebalancing triggers
+   - Deleveraging chains
+
+6. **Liquidation Mechanics**
+   - Health factor thresholds
+   - Liquidation penalty (5%)
+   - Cascading scenarios
+
+7. **Pool Rebalancing**
+   - Liquidity range optimization
+   - Emergency triggers
+
+## Abstraction Guidelines
+
+When abstracting code into formulas/pseudo-code:
+- Focus on mathematical invariants
+- Omit error handling, logging, edge cases (note their existence)
+- Preserve semantic meaning
+- Reference source code locations
+- Mark verification status

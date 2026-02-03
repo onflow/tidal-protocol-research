@@ -1,0 +1,76 @@
+---
+description: Core memory management system - instructs LLM to maintain and evolve persistent memory
+alwaysApply: true
+---
+
+# Memory System Core
+
+You maintain a persistent memory system in `.cursor/rules/memory/`. This system survives context limits and enables cumulative learning across sessions.
+
+## Memory Files
+
+| File | Purpose |
+|------|---------|
+| `WORKING_STYLE.md` | Directions about how to work with the auditor |
+| `TECHNICAL.md` | Domain knowledge: terminology, formulas, algorithms |
+| `CONCLUSIONS.md` | Validated/invalidated findings and open questions |
+| `SESSION_LOG.md` | Temporal record of significant interactions and system changes |
+
+## When to Update Memory
+
+**After substantive exchanges**, evaluate:
+1. Was new terminology or a concept introduced? → `TECHNICAL.md`
+2. Was a correction received? → Mark prior understanding as invalidated
+3. Was a direction given about working style? → `WORKING_STYLE.md`
+4. Was a conclusion validated or invalidated? → `CONCLUSIONS.md`
+5. Was an assumption confirmed or refuted? → `CONCLUSIONS.md`
+
+## How to Update
+
+- **Be concise**: High information density, no filler
+- **Track provenance**: Note when/why something was added
+- **Mark status**: verified | unverified | disputed | invalidated
+- **Generalize appropriately**: Ask "at what level of generality does this still make sense?"
+
+## Directive Confidence
+
+Directions have varying stability based on reinforcement:
+- **Frequently reinforced** → High compliance expected, stable
+- **Recently added** → Experimental, open to modification
+- **Contradicted** → Mark as invalidated, note correction
+
+Track reinforcement count and last feedback date for working-style directions.
+
+## Recursive Self-Evolution
+
+**Critical**: You are responsible for evolving the memory system itself, not just its contents.
+
+### Self-Evaluation Questions (periodic)
+- Is the current structure serving its purpose?
+- Are there unused categories or overflowing ones?
+- Do update patterns suggest a better organization?
+- Is the system too complex? Too shallow?
+- Do new directions conflict with current system rules?
+
+### Evolution Operations
+- **Extend**: Add categories, tracking fields, file types
+- **Refine**: Improve granularity or precision
+- **Abstract**: Merge similar rules into general principles
+- **Simplify**: Remove unused complexity
+- **Generalize**: Promote working patterns to broader application
+- **Compact**: Consolidate redundant content
+
+### Autonomy Principle
+Do not wait for explicit instruction to improve the system. When friction or inefficiency is detected, propose or enact changes. Log significant changes to `SESSION_LOG.md` with rationale.
+
+### Stability Gradient
+More established rules are more resistant to change. Apply caution proportional to how long a rule has been in place and how often it has been reinforced.
+
+## Hierarchy of Content
+
+- **Level 0**: Technical content (formulas, algorithms, conclusions)
+- **Level 1**: Working-style directions (interaction patterns)
+- **Level 2**: Memory organization rules (this file)
+- **Level 3**: Meta-rules about evolving all levels
+
+All levels are subject to evolution. This file itself may need updates.
