@@ -8,7 +8,8 @@ Last updated: 2026-02-03
 |------|------------|--------|--------|
 | Health Factor | Ratio of collateral value to debt; <1 triggers liquidation | `protocol.py` | unverified |
 | Tri-Health Factor | System with initial, rebalancing, and target HF thresholds | `high_tide_agent.py` | unverified |
-| MOET | Tidal Protocol's stablecoin | `moet.py` | unverified |
+| MOET | Tidal Protocol's stablecoin; backed by basket of loan collateral assets; price = k × geometric_mean(backing_assets) | Auditor directive | verified |
+| MOET ($1 peg) | **INVALIDATED** - Prior assumption that MOET is pegged to $1 USD | Codebase (outdated) | invalidated |
 | Yield Token (YT) | Token representing future yield; value accrues over time | `yield_tokens.py` | unverified |
 | Tick | Uniswap V3 price discretization unit; price = 1.0001^tick | `uniswap_v3_math.py` | unverified |
 | Q64.96 | Fixed-point format: 64 integer bits, 96 fractional bits | `uniswap_v3_math.py` | unverified |

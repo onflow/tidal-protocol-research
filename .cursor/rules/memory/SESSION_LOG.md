@@ -110,6 +110,28 @@ Created practical guide for auditor to work with the memory system in Phase 2.
 
 ---
 
+## 2026-02-03: MOET Pricing Model Correction
+
+### Auditor Directive
+MOET is **not** pegged to $1 USD. This is an outdated assumption in the codebase.
+
+### Correct Model
+MOET is backed by the basket of assets collateralizing loans denominated in MOET:
+```
+MOET_price = k × geometric_mean(backing_assets)
+```
+Where `k` is a scaling factor (ratio of token supply to total backing assets).
+
+### Actions Taken
+1. Created `sims-review/MOET_DOLLAR_PEG_INSTANCES.md` to track outdated $1 peg assumptions
+2. Updated TECHNICAL.md: marked MOET $1 peg as **invalidated**, added correct definition
+3. Added problem-specific direction to track instances as encountered
+
+### Audit Task
+Throughout review, log all code/docs that assume MOET = $1 to the tracking file.
+
+---
+
 ## Pending System Improvements
 
 *Ideas for system evolution to consider:*

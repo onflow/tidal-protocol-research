@@ -131,6 +131,10 @@ class FullYearSimConfig:
         # Agent health snapshot frequency (NEW for Study 14 minute-by-minute tracking)
         self.agent_snapshot_frequency_minutes = 1440  # Default: daily (once per day)
         
+        # Manual rebalancing frequency (for non-automated leverage adjustments)
+        # Controls how often users manually check/adjust positions in traditional lending protocols
+        self.leverage_frequency_minutes = 10080  # Default: weekly (7 days = 10,080 minutes)
+        
         # Progress reporting
         self.progress_report_every_n_minutes = 10080  # Weekly progress reports (7 days)
         

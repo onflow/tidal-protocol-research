@@ -27,10 +27,13 @@ Last updated: 2026-02-03
 | Direction | Reinforcements | Last Applied | Notes |
 |-----------|----------------|--------------|-------|
 | Progressive abstraction | 1 | 2026-02-03 | Layer details for on-demand deep inspection |
+| Minimal invasiveness | 1 | 2026-02-05 | Avoid modifying simulation code; prefer wrappers, orchestration layers, smarter terminal calls |
 
 ## Problem-Specific (current focus)
 
-*None yet - will be populated as specific issues arise.*
+| Direction | Reinforcements | Last Applied | Notes |
+|-----------|----------------|--------------|-------|
+| Track MOET $1 peg instances | 1 | 2026-02-03 | Log to `sims-review/MOET_DOLLAR_PEG_INSTANCES.md` when encountered |
 
 ---
 
