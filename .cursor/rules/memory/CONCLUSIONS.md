@@ -1,10 +1,23 @@
 # Audit Conclusions
 
-Last updated: 2026-02-03
+Last updated: 2026-02-06
 
 ## Validated
 
-*None yet - conclusions will be added as audit progresses and findings are confirmed.*
+### Discrepancy Check Bug (2026-02-06)
+
+**Finding**: The "ACCOUNTING ERROR DETECTED!" in `full_year_sim.py` (lines 2951-2956) is a **false positive** caused by a flawed formula.
+
+**Formula bug**: `debt - total_interest_accrued` does NOT equal remaining principal after debt repayments, because `total_interest_accrued` is never decremented when debt is repaid.
+
+**Evidence**:
+- Grep confirms `total_interest_accrued` is never decremented
+- Code trace shows debt repayment only modifies `moet_debt`
+- Mathematical proof via worked example
+
+**Impact**: Informational only. Core simulation accounting is correct.
+
+**Details**: See `sims-review/DISCREPANCY_CHECK_BUG_ANALYSIS.md`
 
 ## Invalidated
 
@@ -32,3 +45,4 @@ Last updated: 2026-02-03
 | Date | Item | Change | Evidence |
 |------|------|--------|----------|
 | 2026-02-03 | (file) | Initial creation | System bootstrap |
+| 2026-02-06 | Discrepancy Check | Validated as bug in check logic | Code trace, grep, mathematical proof |

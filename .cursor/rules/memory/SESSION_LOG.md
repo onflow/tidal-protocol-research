@@ -69,6 +69,7 @@ Key abstraction targets identified:
 | Date | Change | Rationale | Impact |
 |------|--------|-----------|--------|
 | 2026-02-03 | Initial system creation | Bootstrap for audit | Full system |
+| 2026-02-06 | First validated finding recorded | Discrepancy check bug confirmed | CONCLUSIONS.md updated |
 
 ---
 
@@ -129,6 +130,38 @@ Where `k` is a scaling factor (ratio of token supply to total backing assets).
 
 ### Audit Task
 Throughout review, log all code/docs that assume MOET = $1 to the tracking file.
+
+---
+
+## 2026-02-06: Discrepancy Check Bug Identified
+
+### Context
+Auditor ran simulation `run_study_1_2021_mixed_symmetric.py` and observed "ACCOUNTING ERROR DETECTED!" in output with $541.96 discrepancy.
+
+### Investigation
+Traced through code to understand:
+1. How `total_initial_value_invested` is computed (YieldTokenManager)
+2. How `current_moet_debt` and `total_interest_accrued` are tracked
+3. The discrepancy check formula at `full_year_sim.py:2951`
+
+### Finding
+**The discrepancy check has a logical bug, not the simulation.**
+
+The formula `debt - total_interest_accrued` assumes this equals remaining principal, but:
+- `total_interest_accrued` tracks ALL historical interest (including on repaid debt)
+- It is **never decremented** when debt is repaid
+- Therefore the formula is invalid after any debt repayment
+
+### Evidence
+- Grep: `total_interest_accrued.*-=` returns zero matches
+- Code trace: debt repayment only modifies `moet_debt`
+- Mathematical proof via worked example
+
+### Documentation
+Created `sims-review/DISCREPANCY_CHECK_BUG_ANALYSIS.md` with full analysis.
+
+### Status
+Validated finding. Core simulation accounting is correct; only the check logic is flawed.
 
 ---
 
