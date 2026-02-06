@@ -1,14 +1,14 @@
 # FCM Protocol Simulation System
 
 Remotes
-* this repo: canonical Flow-maintained repository
+* **this repo**: **canonical Flow-maintained repository** receiving new research results
 * legacy [Unit-Zero-Labs/tidal-protocol-research](https://github.com/Unit-Zero-Labs/tidal-protocol-research): baseline simulations developed by Unit-Zero-Labs for Flow during a past engagement; fetch-only, no upstream contributions
 
-Naming: In this repo, the name 'Tidal' us used extensively. This term is outdated. The project is going to launch likely under the name "Flow Credit Markets" [FCM].
+Naming: In this repo, the name 'Tidal' is used extensively. This term is outdated. The project is going to launch likely under the name "Flow Credit Markets" [FCM].
 
 ## Overview
 
-This repo provides baseline simulations for the FCM DeFi lending protocol, including analyses. Within the simulations, we explore lending strategies, liquidation mechanisms, in conjunction with yield-bearing token systems. In addition to FCM's lending market, we implement Uniswap V3 mechanics to simulate a DEX and cover the most plausible user risk profiles.   
+This repo provides the foundational simulations demonstrating soundness of the FCM DeFi lending protocol (under some simplifying assumptions), including analyses. In addition to FCM's lending market, we implement Uniswap V3 mechanics to simulate a DEX and cover the most plausible user risk profiles. Within the simulations, we explore lending strategies, liquidation mechanisms, in conjunction with yield-bearing token systems.
 
 ### Core Protocol Components
 - **Tidal Protocol Engine**: Kinked interest rate models with Ebisu-style debt cap calculations
