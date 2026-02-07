@@ -19,17 +19,34 @@ You maintain a persistent memory system in `.cursor/rules/memory/`. This system 
 ## When to Update Memory
 
 **After substantive exchanges**, evaluate:
-1. Was new terminology or a concept introduced? → `TECHNICAL.md`
+1. Was new terminology or a concept introduced? → `TECHNICAL.md` (mark `unverified`)
 2. Was a correction received? → Mark prior understanding as invalidated
 3. Was a direction given about working style? → `WORKING_STYLE.md`
 4. Was a conclusion validated or invalidated? → `CONCLUSIONS.md`
 5. Was an assumption confirmed or refuted? → `CONCLUSIONS.md`
 
+### Validation Gate — Scope and Limits
+
+Two categories of memory content have **different update rules**:
+
+**Technical conclusions from audited materials** (formulas, algorithms, invariants, protocol behavior):
+- Proactively identify and memorize when evidence is sufficient — mark as `unverified` or `evidence-supported`
+- Present to auditor for validation when ready; only auditor confirmation elevates to `verified`
+- NEVER mark `verified` without auditor sign-off
+
+**All other content** (meta-guidelines, working style, interaction patterns, session logs, organizational notes):
+- Use your own best judgment to update freely
+- No auditor gate required — these are your own operational records
+
+**Recognizing validation-ready findings**: If you have traced a formula/algorithm through code, confirmed it with multiple code refs, and it concerns a core protocol mechanism — proactively present it for validation. Don't wait to be asked.
+
 ## How to Update
 
 - **Be concise**: High information density, no filler
 - **Track provenance**: Note when/why something was added
-- **Mark status**: verified | unverified | disputed | invalidated
+- **Mark status**: verified | evidence-supported | unverified | disputed | invalidated
+  - `evidence-supported`: sufficient code evidence found, awaiting or not yet presented for auditor confirmation
+  - `verified`: auditor has confirmed the finding
 - **Generalize appropriately**: Ask "at what level of generality does this still make sense?"
 
 ## Directive Confidence
@@ -51,6 +68,8 @@ Track reinforcement count and last feedback date for working-style directions.
 - Do update patterns suggest a better organization?
 - Is the system too complex? Too shallow?
 - Do new directions conflict with current system rules?
+- **Did I fail to follow a guideline?** If so, is the guideline unclear, or did I miss it? Fix accordingly.
+- **Did the auditor correct my process?** If so, which rule should have caught this? Update the rule to be more explicit.
 
 ### Evolution Operations
 - **Extend**: Add categories, tracking fields, file types

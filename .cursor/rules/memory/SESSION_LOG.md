@@ -70,6 +70,7 @@ Key abstraction targets identified:
 |------|--------|-----------|--------|
 | 2026-02-03 | Initial system creation | Bootstrap for audit | Full system |
 | 2026-02-06 | First validated finding recorded | Discrepancy check bug confirmed | CONCLUSIONS.md updated |
+| 2026-02-07 | Validation gate added | Process correction: findings need auditor sign-off before `verified` status | Rules + interaction patterns updated |
 
 ---
 
@@ -162,6 +163,28 @@ Created `sims-review/DISCREPANCY_CHECK_BUG_ANALYSIS.md` with full analysis.
 
 ### Status
 Validated finding. Core simulation accounting is correct; only the check logic is flawed.
+
+---
+
+## 2026-02-07: Process Correction — Validation Gate
+
+### Auditor Feedback
+Over multiple exchanges, I extracted the High Tide rebalancing mechanics (HF formula, tri-health thresholds, debt reduction formula, checking frequency) but committed the discrepancy check finding to CONCLUSIONS.md without explicitly asking the auditor to validate first. The auditor pointed out I should have recognized this as a validation opportunity and asked before writing to memory.
+
+### Root Cause Analysis
+- `01-audit-interaction.mdc` "When Finding Evidence" pattern says to ask for validation
+- But `00-memory-system.mdc` "When to Update Memory" rules didn't require auditor confirmation before writing — they triggered on "concept introduced" not "concept confirmed"
+- The gap: interaction rules said one thing, memory rules didn't enforce it
+
+### Fixes Applied
+1. Added "Validation Gate for Technical Findings" section to `00-memory-system.mdc`
+2. Added "Recognizing Validation Opportunities" pattern to `01-audit-interaction.mdc`
+3. Added process-failure self-evaluation questions to recursive self-evolution section
+4. Added "Validation gate for memory" direction to `WORKING_STYLE.md`
+5. Reinforced "Proactive engagement" (+1, now 3 reinforcements)
+
+### Pending
+High Tide rebalancing mechanics finding presented for auditor validation — awaiting confirmation before committing to TECHNICAL.md as verified.
 
 ---
 

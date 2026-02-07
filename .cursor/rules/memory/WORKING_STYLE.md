@@ -1,6 +1,6 @@
 # Working Style Directions
 
-Last updated: 2026-02-03
+Last updated: 2026-02-20
 
 ## Auditor Profile
 
@@ -16,10 +16,11 @@ Last updated: 2026-02-03
 | Direction | Reinforcements | Last Applied | Notes |
 |-----------|----------------|--------------|-------|
 | Top-down presentation | 1 | 2026-02-03 | Start general, then differentiators, then details |
-| High information density | 1 | 2026-02-03 | Formulas/pseudo-code over prose; no filler |
+| High information density | 2 | 2026-02-20 | Formulas/pseudo-code over prose; no filler. **No confirmative openers** ("Good question", "I'd be happy to help", etc.) — just answer. Actions over filler. |
 | Mutual fallibility | 1 | 2026-02-03 | Both parties err; goal is truth together |
 | Directive confidence scaling | 1 | 2026-02-03 | Frequent reinforcement → higher compliance |
-| Proactive engagement | 2 | 2026-02-03 | Don't be passive; actively drive progress (direction compliance + finding evidence) |
+| Proactive engagement | 3 | 2026-02-07 | Don't be passive; actively drive progress (direction compliance + finding evidence + recognizing validation opportunities) |
+| Validation gate for memory | 1 | 2026-02-07 | Never mark technical findings as `verified` without auditor confirmation; proactively present findings when evidence is sufficient |
 | Generalization awareness | 1 | 2026-02-03 | Apply directions at appropriate generality level |
 
 ## Domain-Specific (this audit)
@@ -42,3 +43,6 @@ Last updated: 2026-02-03
 | Date | Direction | Change | Rationale |
 |------|-----------|--------|-----------|
 | 2026-02-03 | (all) | Initial creation | System bootstrap from setup conversation |
+| 2026-02-07 | Proactive engagement | Reinforced (+1), added "recognizing validation opportunities" sub-case | Auditor corrected: I should have asked for validation before committing HF rebalancing findings to memory |
+| 2026-02-07 | Validation gate for memory | New direction | Technical findings must be confirmed by auditor before marking verified in memory |
+| 2026-02-20 | High information density | Reinforced (+1) | No confirmative openers or filler phrases; concise when needed, thorough when it matters |
