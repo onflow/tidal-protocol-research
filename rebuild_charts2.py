@@ -18,12 +18,6 @@ from datetime import datetime
 from typing import Dict, List, Any, Tuple
 import glob
 
-
-import matplotlib.pyplot as plt
-plt.plot([1,2,3])
-plt.show()
-
-
 # Add the project root to Python path
 # UPDATE: this is temporarily autoconfigured as the default directory '.' returned by `os.getcwd()` right at the start of the python interpreter
 #

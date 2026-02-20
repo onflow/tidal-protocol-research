@@ -29,7 +29,17 @@ def run_scenario(scenario_name: str):
     print(f"   YT Crash: {config.yt_crash_magnitude:.0%} drop")
     print(f"   BTC Crash: {config.btc_crash_magnitude:.0%} drop")
     print(f"   Liquidity Reduction: {config.liquidity_reduction_start:.0%} → {config.liquidity_reduction_peak:.0%}")
-    print(f"   Oracle Outliers: {config.oracle_outlier_magnitude:.0%}")
+    
+    # `oracle_outlier_magnitude` doesn't exist anywhere in the codebase. This script is not able to run in the form we received it.
+    # print(f"   Oracle Outliers: {config.oracle_outlier_magnitude:.0%}")
+    #
+    # replaced with `oracle_volatility` and `yt_wick_magnitude` for the following reason:
+    # The intent of that print presumably was to show the oracle-related stress parameter for the selected scenario. `oracle_volatility` is the only scenario-varying 
+    # oracle parameter (5% / 8% / 12% for mild/moderate/severe). The other two oracle config fields (`oracle_outlier_duration_minutes = 5` and `extreme_tick_magnitude = 0.45`) 
+    # are scenario-independent constants, so they wouldn't be meaningful to display in a per-scenario summary.
+    print(f"   Oracle Volatility: ±{config.oracle_volatility:.0%} per tick") # parameter is the ±% random walk applied at each tick during the crash
+    print(f"   Oracle Wicks: {config.yt_wick_magnitude:.0%} drop per wick event (~12% chance/min during crash)") # magnitude of sharp drop (wick event) during the crash
+
     print(f"   Duration: {config.simulation_duration_minutes:,} minutes ({config.simulation_duration_minutes//1440} days)")
     print(f"   Agents: {config.num_agents} with ${config.target_total_debt:,.0f} target debt")
     print()

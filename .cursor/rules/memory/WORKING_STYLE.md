@@ -22,6 +22,13 @@ Last updated: 2026-02-20
 | Proactive engagement | 3 | 2026-02-07 | Don't be passive; actively drive progress (direction compliance + finding evidence + recognizing validation opportunities) |
 | Validation gate for memory | 1 | 2026-02-07 | Never mark technical findings as `verified` without auditor confirmation; proactively present findings when evidence is sufficient |
 | Generalization awareness | 1 | 2026-02-03 | Apply directions at appropriate generality level |
+| Punctuation style | 1 | 2026-02-20 | Prefer "e.g." / "i.e." over em-dashes for inline clarifications. Use em-dashes sparingly. |
+
+## Code Editing
+
+| Direction | Reinforcements | Last Applied | Notes |
+|-----------|----------------|--------------|-------|
+| Comment handling | 1 | 2026-02-20 | Never silently remove comments. Update if still relevant. If a comment block seems entirely obsolete, ask before removing it (can reference specific line ranges). |
 
 ## Domain-Specific (this audit)
 
@@ -46,3 +53,5 @@ Last updated: 2026-02-20
 | 2026-02-07 | Proactive engagement | Reinforced (+1), added "recognizing validation opportunities" sub-case | Auditor corrected: I should have asked for validation before committing HF rebalancing findings to memory |
 | 2026-02-07 | Validation gate for memory | New direction | Technical findings must be confirmed by auditor before marking verified in memory |
 | 2026-02-20 | High information density | Reinforced (+1) | No confirmative openers or filler phrases; concise when needed, thorough when it matters |
+| 2026-02-20 | Punctuation style | New direction | Fewer em-dashes; prefer "e.g." / "i.e." for inline clarifications |
+| 2026-02-20 | Comment handling | New direction | Don't silently remove comments; update or ask before deleting |
