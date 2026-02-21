@@ -206,7 +206,7 @@ By starting both protocols at 1.3 HF, this study proves that High Tide's outperf
 
 #### Net Position and APY Comparison
 
-![Net Position APY Comparison](../tidal_protocol_sim/results/Full_Year_2021_BTC_Mixed_Market_Equal_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison/charts/net_position_apy_comparison.png)
+![Net Position APY Comparison](../tidal_protocol_sim/results/Full_Year_2021_BTC_Mixed_Market_Equal_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison_HT_vs_AAVE_Comparison/charts/net_position_apy_comparison.png)
 
 **Top Row - Net Position Evolution:**
 - **High Tide**: Smooth growth trajectory from $29K → $49.9K with active position management and weekly yield harvesting
@@ -223,7 +223,7 @@ By starting both protocols at 1.3 HF, this study proves that High Tide's outperf
 
 #### BTC Capital Preservation
 
-![BTC Capital Preservation](../tidal_protocol_sim/results/Full_Year_2021_BTC_Mixed_Market_Equal_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison/charts/btc_capital_preservation_comparison.png)
+![BTC Capital Preservation](../tidal_protocol_sim/results/Full_Year_2021_BTC_Mixed_Market_Equal_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison_HT_vs_AAVE_Comparison/charts/btc_capital_preservation_comparison.png)
 
 **BTC Accumulation:**
 - **High Tide**: +5.83% BTC accumulation (1.000 → 1.0583 BTC) through weekly yield harvesting
@@ -324,7 +324,7 @@ By equalizing the starting conditions, any performance difference is attributabl
 
 #### 4.4.1 Net Position & APY Evolution
 
-![Net Position APY Comparison](../tidal_protocol_sim/results/Full_Year_2024_BTC_Bull_Market_Equal_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison/charts/net_position_apy_comparison.png)
+![Net Position APY Comparison](../tidal_protocol_sim/results/Full_Year_2024_BTC_Bull_Market_Equal_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison_HT_vs_AAVE_Comparison/charts/net_position_apy_comparison.png)
 
 **Observations:**
 
@@ -500,7 +500,7 @@ High Tide's **74% higher initial leverage** translates directly to higher yield 
 
 #### 5.4.1 Net Position & Return Evolution
 
-![Net Position APY Comparison](../tidal_protocol_sim/results/Full_Year_2024_BTC_Capital_Efficiency_Realistic_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison/charts/net_position_apy_comparison.png)
+![Net Position APY Comparison](../tidal_protocol_sim/results/Full_Year_2024_BTC_Capital_Efficiency_Realistic_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison_HT_vs_AAVE_Comparison/charts/net_position_apy_comparison.png)
 
 **Observations:**
 
@@ -525,7 +525,7 @@ High Tide, by contrast:
 
 #### 5.4.2 BTC Accumulation Analysis
 
-![BTC Capital Preservation](../tidal_protocol_sim/results/Full_Year_2024_BTC_Capital_Efficiency_Realistic_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison/charts/btc_capital_preservation_comparison.png)
+![BTC Capital Preservation](../tidal_protocol_sim/results/Full_Year_2024_BTC_Capital_Efficiency_Realistic_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison_HT_vs_AAVE_Comparison/charts/btc_capital_preservation_comparison.png)
 
 **Key Insights:**
 
@@ -2011,7 +2011,7 @@ Key charts referenced in this whitepaper:
 - **Featured Charts**: `net_position_apy_comparison.png`, `btc_capital_preservation_comparison.png`
 
 **Study 3 - 2024 Capital Efficiency:**
-- Location: `tidal_protocol_sim/results/Full_Year_2024_BTC_Capital_Efficiency_Realistic_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison/charts/`
+- Location: `tidal_protocol_sim/results/Full_Year_2024_BTC_Capital_Efficiency_Realistic_HF_Weekly_Yield_Harvest_HT_vs_AAVE_Comparison_HT_vs_AAVE_Comparison/charts/`
 - **Featured Charts**: `net_position_apy_comparison.png`, `btc_capital_preservation_comparison.png`
 
 **Study 4 - 2022 Bear Market:**
