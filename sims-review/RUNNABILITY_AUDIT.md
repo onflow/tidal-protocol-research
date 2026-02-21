@@ -52,7 +52,7 @@ Every study script sets e.g. `config.simulation_duration_days = 365`. But `FullY
 Study scripts set `config.ecosystem_growth_enabled = False`. The actual attribute read by the engine is `config.enable_ecosystem_growth`. The `__setattr__` override doesn't translate. Harmless here because the default is already `False`, but indicates the contractor was coding against an API they didn't verify.
 
 
-## Category C: Confirmed Working
+## Category C: No issues encountered; but also some simulations not attempted
 
 | Script | Status | Notes |
 |--------|--------|-------|
