@@ -1901,6 +1901,11 @@ def main():
         return results
         
     elif mode == "3":
+        # CAUTION: Mode 3 is fully redundant with mode 1. Both execute the identical code path
+        # (PoolRebalancer24HTest(config).run_test()), and PoolRebalancer24HConfig already defaults
+        # enable_arb_delay = True, so mode 1 always runs with delay enabled regardless of how the
+        # user answers its prompt (see bug note below). Mode 3 can be removed without losing any
+        # functionality.
         print("\n⏳ ARBITRAGE DELAY TEST MODE SELECTED")
         print("This will test the system with 1-hour arbitrage delay enabled...")
         
@@ -1927,7 +1932,11 @@ def main():
         print("• Generate comprehensive analysis and charts")
         print()
         
-        # Optional: Allow user to customize configuration
+        # CAUTION BUG: This prompt is non-functional. PoolRebalancer24HConfig defaults
+        # enable_arb_delay = True, and there is no `else` branch here to set it False.
+        # Answering 'N' (or pressing Enter) does NOT disable the delay — it leaves the config
+        # value unchanged at True. The delay is therefore always enabled in mode 1, making
+        # this prompt misleading and mode 3 entirely redundant.
         enable_delay = input("Enable arbitrage delay? (y/N): ").strip().lower()
         if enable_delay == 'y':
             config.enable_arb_delay = True
