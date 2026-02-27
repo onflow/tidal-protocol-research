@@ -1901,11 +1901,9 @@ def main():
         return results
         
     elif mode == "3":
-        # CAUTION: Mode 3 is fully redundant with mode 1. Both execute the identical code path
-        # (PoolRebalancer24HTest(config).run_test()), and PoolRebalancer24HConfig already defaults
-        # enable_arb_delay = True, so mode 1 always runs with delay enabled regardless of how the
-        # user answers its prompt (see bug note below). Mode 3 can be removed without losing any
-        # functionality.
+        # Mode 3 is a convenience shortcut for mode 1 answered with 'y': it forces
+        # enable_arb_delay = True without prompting. With the else branch now present in
+        # mode 1, mode 3 is no longer redundant — it bypasses the prompt entirely.
         print("\n⏳ ARBITRAGE DELAY TEST MODE SELECTED")
         print("This will test the system with 1-hour arbitrage delay enabled...")
         
@@ -1932,16 +1930,15 @@ def main():
         print("• Generate comprehensive analysis and charts")
         print()
         
-        # CAUTION BUG: This prompt is non-functional. PoolRebalancer24HConfig defaults
-        # enable_arb_delay = True, and there is no `else` branch here to set it False.
-        # Answering 'N' (or pressing Enter) does NOT disable the delay — it leaves the config
-        # value unchanged at True. The delay is therefore always enabled in mode 1, making
-        # this prompt misleading and mode 3 entirely redundant.
+        # NOTE: PoolRebalancer24HConfig defaults enable_arb_delay = True. The else branch here explicitly
+        # overrides that default so mode 1 defaults to enable_arb_delay = False instead of True.
         enable_delay = input("Enable arbitrage delay? (y/N): ").strip().lower()
         if enable_delay == 'y':
             config.enable_arb_delay = True
             print(f"🔄 Arbitrage delay enabled: {config.arb_delay_description}")
-        
+        else:
+            config.enable_arb_delay = False
+            print("⏩ Arbitrage delay disabled.")        
         # Run standard test
         test = PoolRebalancer24HTest(config)
         results = test.run_test()
