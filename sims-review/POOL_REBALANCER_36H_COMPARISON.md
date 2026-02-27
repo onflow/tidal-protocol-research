@@ -84,6 +84,17 @@ The simulation loop runs `range(2160)` (minutes 0–2159). The ALM rebalancer is
 | With delay | 2026-02-20 | `results/Pool_Rebalancer_36H_Test_-_with-Arb-Delay_20260220_171904.log` | `results/Pool_Rebalancer_36H_Test_-_with-Arb-Delay/` |
 
 
+
+Run commands (from project root, with `FlowCreditMarkets` venv activated):
+
+```bash
+# No arb delay (mode 1, answer N to prompt whether to use arbitrage delay)
+printf "\nN\n" | PYTHONUNBUFFERED=1 python sim_tests/hourly_test_with_rebalancer.py 2>&1 | grep --line-buffered -v "DEBUG" | tee tidal_protocol_sim/results/pool_rebalancer_36h_no_arb_delay_$(date +%Y%m%d_%H%M%S).log
+
+# With arb delay (mode 3, no prompt)
+printf "3\n" | PYTHONUNBUFFERED=1 python sim_tests/hourly_test_with_rebalancer.py 2>&1 | grep --line-buffered -v "DEBUG" | tee tidal_protocol_sim/results/pool_rebalancer_36h_with_arb_delay_$(date +%Y%m%d_%H%M%S).log
+```
+
 ---
 
 ## Pre-existing report: `reports/High_Tide_Capacity_Study_w_Arbing.md`
