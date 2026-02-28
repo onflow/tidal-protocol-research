@@ -9,15 +9,17 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 **Covered so far:**
 - All 8 Primer §4 figures mapped to source scripts → `FCM_PRIMER_FIGURE_MAPPING.md`
 - All sim scripts catalogued by runnability → `RUNNABILITY_AUDIT.md`
-- `hourly_test_with_rebalancer.py` executed (modes 1 + 3), partial reproduction (3/6 panels match)
+- `hourly_test_with_rebalancer.py` executed (modes 1 + 3), partial reproduction (2/6 panels match, 1/6 partial, 3/6 fail)
 - `balanced_scenario_monte_carlo.py` executed (after import fix), reproduction fails due to post-delivery config change
 - Flash crash simulation analyzed (not executed to completion — B2 leverage loop blocks)
 - Core formulas verified: Health Factor, Debt Reduction, Rebalancing algorithm
+- **Uniswap V3 fee bypass bug found (D9/B3)** — swap loop omits fee from remaining, ~430× slippage undercount
 
 **Key audit artifacts:** `sims-review/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY_CHECK_BUG_ANALYSIS.md`, `MOET_DOLLAR_PEG_INSTANCES.md`
 
 **Natural next steps:**
-- Fix D8 (snapshot frequency + chart x-axis) and re-run `hourly_test_with_rebalancer.py` for full §4.3 reproduction
+- Fix D9 (`uniswap_v3_math.py:1282`) and re-run to verify slippage matches Primer's ~$2
+- Fix D8 (snapshot frequency + chart x-axis) and re-run for full §4.3 reproduction
 - Revert D7 config and re-run `balanced_scenario_monte_carlo.py` for §4.2 reproduction
 - Fix `comprehensive_ht_vs_aave_analysis.py` import and test Figure 5
 - Resolve open questions F1 (algo profit), F2 (ALM off-by-one), B2 (leverage loop)
@@ -114,6 +116,18 @@ Three changes from self-evaluation:
 2. Brought CONCLUSIONS.md current — added "Evidence-Supported" tier, populated with D7/D8/rebalancing-limits/AAVE-collateral findings, refreshed open questions
 3. Added "Principles over recollections" rule to `00-memory-system.mdc § How to Update` — directions should state general principles, not specific cases that motivated them
 4. Made Active Retrieval in `00-memory-system.mdc` more specific (numbered checklist of what to read at session start)
+
+---
+
+## 2026-02-28: Uniswap V3 Fee Bypass Bug (D9/B3) + Triple-Recording (B4)
+
+Auditor-initiated investigation of ~430× slippage discrepancy between Primer figure (image19) and sim output (`agent_slippage_analysis.png`).
+
+**D9/B3 — Fee bypass:** `uniswap_v3_math.py:1282` subtracts `amount_in` instead of `amount_in + fee_amount` from `amount_specified_remaining`. Geometric series re-swaps the fee each iteration → 0.05% fee effectively bypassed. Primer's $2.14 is correct; current code produces $0.005.
+
+**B4 — Triple-recording:** `engine.rebalancing_events` gets 3 appends per event (engine lines 536, 562, 628). Inflates counts/costs 3× but not per-event stats.
+
+→ `FCM_PRIMER_FIGURE_MAPPING.md` updated: D9, B4, confidence downgrade for "Agent Rebalancing Analysis" (Very High → Low), reproducibility table updated.
 
 ---
 

@@ -31,6 +31,16 @@ Engine defaults `agent_snapshot_frequency_minutes = 1440`; chart uses enumerate 
 No inter-minute cooldown, no minimum threshold, no gas costs. Agent can rebalance every minute (525,600×/year, 3 cycles each).
 → `TECHNICAL.md` §High Tide Rebalancing Limitations
 
+### D9: Uniswap V3 fee bypass in swap loop (2026-02-28)
+
+`uniswap_v3_math.py:1282` subtracts only `amount_in` instead of `amount_in + fee_amount` from remaining. Fee re-swapped as geometric series → 0.05% fee effectively bypassed. Slippage ~430× too low ($0.005 vs correct ~$2.14). Primer values are correct; current code cannot reproduce them.
+→ `sims-review/FCM_PRIMER_FIGURE_MAPPING.md` §D9
+
+### B4: Triple-recording of rebalancing events (2026-02-28)
+
+Each rebalancing appends 3× to `engine.rebalancing_events` (engine lines 536, 562, 628). Event counts and cost sums 3× inflated; per-event stats unaffected.
+→ `sims-review/FCM_PRIMER_FIGURE_MAPPING.md` §B4
+
 ### AAVE Collateral Factor Inconsistency (2026-02-07)
 
 HF formula uses 0.85 but rebalancing debt target uses 0.80. Effect: AAVE targets more conservative debt when deleveraging than its HF implies.
@@ -64,3 +74,5 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Summary:
 | 2026-02-07 | AAVE collateral inconsistency | Evidence-supported | Code trace |
 | 2026-02-27 | D7 config change | Evidence-supported | git diff, reproduction run |
 | 2026-02-27 | D8 snapshot bugs | Evidence-supported | Code trace, reproduction run |
+| 2026-02-28 | D9 fee bypass | Evidence-supported | Code trace, Uniswap V3 ref comparison, reproduction run |
+| 2026-02-28 | B4 triple-recording | Evidence-supported | Code trace (3 append sites) |

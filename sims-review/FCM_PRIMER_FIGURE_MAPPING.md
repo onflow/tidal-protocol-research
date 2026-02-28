@@ -91,7 +91,7 @@ All six §4.3 figures originate from a **single script and a single run** of `si
 ### Figures "Pool Price Evolution: True vs Pool YT Prices with ALM Interventions" 
 
 **Chart function:** `_create_pool_price_evolution_chart` (line 924)  
-**Output file:** `Pool_Rebalancer_36H_Test/charts/pool_price_evolution_analysis.png`  
+**Output file:** `Pool_Rebalancer_36H_Test_-_[with|no]-Arb-Delay/charts/pool_price_evolution_analysis.png`  
 **Structure:** Single file with two diagrams (line 952) — the two images are the two panels of this one chart, split for the PDF.
 
 - **Top Panel** `True YT Price vs Pool YT Price`
@@ -112,25 +112,27 @@ All six §4.3 figures originate from a **single script and a single run** of `si
 
 
 **Chart function:** `_create_agent_slippage_analysis_chart` (line 1406)  
-**Output file:** `Pool_Rebalancer_36H_Test/charts/agent_slippage_analysis.png`  
+**Output file:** `Pool_Rebalancer_36H_Test_-_[with|no]-Arb-Delay/charts/agent_slippage_analysis.png`  
 **Structure:** 2×2 panel
 
 
-| Panel | Content | Key data in image |
-|-------|---------|-------------------|
-| Top-left | Slippage cost distribution (red histogram) | Mean \$2.143, Max \$5.492, Median \$2.036 |
-| Top-right | Avg slippage cost over time (blue line) | 0–35 h, oscillating \$1–\$4.50 |
-| Bottom-left | Rebalance amount distribution (green histogram) | Mean \$791, Max \$1057, Median \$783 |
-| Bottom-right | Avg rebalance amount over time (orange line) | Declining \$1,100 → \$600 over 36 h |
+| Panel | Content | Primer (image19) | Sim output (2026-02-27) |
+|-------|---------|-------------------|-------------------------|
+| Top-left | Slippage cost distribution (red histogram) | Mean \$2.143, Max \$5.492, Median \$2.036 | Mean \$0.005, Max \$0.008, Median \$0.004 |
+| Top-right | Avg slippage cost over time (blue line) | Oscillating \$0.5–\$4.50 | Smooth decline \$0.008→\$0.003 |
+| Bottom-left | Rebalance amount distribution (green histogram) | Mean \$791, Max \$1057, Median \$783 | Mean \$842, Max \$1123, Median \$832 |
+| Bottom-right | Avg rebalance amount over time (orange line) | Declining \$1,100 → \$600 | Declining \$1,100 → \$600 |
 
-**Evidence:** PDF claims "Avg. Slippage per Rebalance Operation: \$2.09" — matches the chart's mean of \$2.143 (close; minor rounding or slight difference in run).
+**Discrepancy:** Slippage costs differ by **~430×** between Primer and current sim output. Rebalance amounts are consistent (~6% difference). Root cause: fee bypass bug in the Uniswap V3 swap loop — see **D9**. The Primer's \$2.09/\$2.143 values represent correct slippage (fees + price impact); the current code's \$0.005 is incorrectly low because swap fees are effectively bypassed.
+
+**Note:** PDF claims "Avg. Slippage per Rebalance Operation: \$2.09" — consistent with the Primer chart's mean of \$2.143 but **not reproducible** from committed code.
 
 ---
 
 ### Figures (time series) "BTC Price Decline Over Time" and "Agent Health Factor Evolution" and "Yield Token Holdings Over Time"
 
 **Chart function:** `_create_time_series_evolution_chart` (line 1177)  
-**Output file:** `Pool_Rebalancer_36H_Test/charts/time_series_evolution_analysis.png`  
+**Output file:** `Pool_Rebalancer_36H_Test_-_[with|no]-Arb-Delay/charts/time_series_evolution_analysis.png`  
 **Structure:** 2×2 panel (line 1238). The "Net Position" panel (bottom left) was **omitted** from the Primer PDF.
 
 - **"BTC Price Decline Over Time"** (top-left): 
@@ -155,7 +157,7 @@ All six §4.3 figures originate from a **single script and a single run** of `si
 | Report | References |
 |--------|-----------|
 | `reports/High_Tide_vs_AAVE_Executive_Summary_Clean.md` | Embeds `survival_rate_comparison.png`, `performance_matrix_heatmap.png`, `cost_comparison_analysis.png`, `rebalancing_activity_analysis.png`, `time_series_evolution_analysis.png` — all from `Balanced_Scenario_Monte_Carlo/charts/` |
-| `reports/High_Tide_Capacity_Study_w_Arbing.md` | Embeds `rebalancer_activity_analysis.png`, `pool_balance_evolution_analysis.png`, `pool_price_evolution_analysis.png`, `agent_performance_analysis.png`, `agent_slippage_analysis.png`, `time_series_evolution_analysis.png` — all from `Pool_Rebalancer_36H_Test/charts/` |
+| `reports/High_Tide_Capacity_Study_w_Arbing.md` | Embeds `rebalancer_activity_analysis.png`, `pool_balance_evolution_analysis.png`, `pool_price_evolution_analysis.png`, `agent_performance_analysis.png`, `agent_slippage_analysis.png`, `time_series_evolution_analysis.png` — all from `Pool_Rebalancer_36H_Test_-_[with\|no]-Arb-Delay/charts/` |
 
 ---
 
@@ -171,6 +173,8 @@ The PDF text states "Avg Cost per Agent: \$53,000" for traditional liquidation. 
 ### D2: FCM average cost — \$22 (PDF) vs \$19–\$22 (chart) vs \$2.09 (§4.3)
 
 The PDF prose in §4.2 claims "\$22 per agent." The performance matrix shows \$19–\$22, consistent. But §4.3 claims "\$2.09 per rebalance operation." These are not contradictory (§4.2 is total cost across all rebalances per agent; §4.3 is cost per individual rebalance event) but the distinction is not made explicit in the PDF.
+
+**Update** (2026-02-28): The \$2.09 figure appears to be the **correct** slippage value (fees + price impact for ~\$800 swaps on a \$500k pool with 0.05% fee tier). Current code produces \$0.005 due to the fee bypass bug (D9). The \$22 total cost per agent (\$2.09 × ~10 rebalances) is consistent — but neither value is reproducible from committed code.
 
 ### D3: Agent risk profile description (§4.2) does not match any simulation
 
@@ -249,6 +253,53 @@ Items #2–#4 are substantive economic changes that affect simulation outcomes, 
 
 </details>
 
+### D9: Uniswap V3 swap loop fee bypass ⚠️ breaking §4.3 slippage figures
+
+**Location:** `uniswap_v3_math.py:1282`
+
+**Bug:** The swap loop subtracts only `amount_in` from `amount_specified_remaining`, omitting `fee_amount`. The Uniswap V3 reference implementation (Solidity) subtracts `amountIn + feeAmount`:
+
+```diff
+- state['amount_specified_remaining'] -= amount_in  # Fee already deducted in compute_swap_step
++ state['amount_specified_remaining'] -= (amount_in + fee_amount)  # Uniswap V3 ref: amountIn + feeAmount
+```
+
+**Mechanism:** After each swap step, the un-deducted fee remains as "unswapped" amount, causing the loop to re-swap it (minus a fee on the fee), creating a convergent geometric series:
+
+| Iteration | Remaining | Net input | Output (L≫trade) |
+|-----------|-----------|-----------|-------------------|
+| 1 | $842.000 | $841.579 | ≈$841.579 |
+| 2 | $0.421 | $0.421 | ≈$0.421 |
+| 3 | $0.0002 | <tol | exit |
+| **Total** | | | **≈$842.00** |
+
+Each iteration swaps the prior iteration's fee. With `fee_rate = 0.0005`, convergence is rapid (`r³ ≈ 1.25×10⁻¹⁰`), yielding near-100% output efficiency. The 0.05% fee is effectively bypassed.
+
+**Quantitative impact:**
+- Expected slippage (fee + impact): `$842 × 0.0005 + price_impact ≈ $0.42 + $1.72 ≈ $2.14`
+- Actual slippage (fee bypassed): residual price impact only ≈ $0.005
+- Ratio: **~430×** under-reported slippage
+
+**Affected figures:** "Agent Rebalancing Analysis" slippage panels (top row of 2×2). Rebalance amount panels (bottom row) are unaffected since they track MOET raised, not slippage.
+
+**Implication for Primer:** The Primer's \$2.09/\$2.143 slippage values are **correct** (consistent with 0.05% fee + concentrated liquidity price impact on ~\$800 trades). The current codebase produces \$0.005, meaning the Primer figures were generated before this bug was introduced or with different swap code.
+
+**Secondary effects:**
+- Pool MOET reserves drain ~0.05% faster per swap than they should (accumulated fee leakage)
+- `cost_of_rebalancing` metric at `high_tide_vault_engine.py:995` sums over tripled events (see B4), compounding the error: 3× event count × wrong per-event slippage
+
+### B4: Triple-recording of rebalancing events in engine
+
+Each agent rebalancing appends **3 entries** to `engine.rebalancing_events`:
+
+| # | Location | Cause |
+|---|----------|-------|
+| 1 | `high_tide_vault_engine.py:536` | First append in `_execute_yield_token_sale` |
+| 2 | `high_tide_vault_engine.py:562` | Second append in same function (duplicate) |
+| 3 | `high_tide_vault_engine.py:628` | `record_agent_rebalancing_event`, called from `high_tide_agent.py:354` |
+
+**Impact on charts:** The chart function `_create_agent_slippage_analysis_chart` (line 1411) reads `simulation_results["rebalancing_events"]` which is `engine.rebalancing_events` (line 1098). Per-event statistics (mean, median, max) are unaffected (all 3 copies carry identical values), but histogram frequencies and event counts are 3× inflated. The `cost_of_rebalancing` per agent (`engine.py:995`) sums slippage across all 3 copies, tripling the reported cost.
+
 
 ---
 
@@ -260,16 +311,16 @@ Items #2–#4 are substantive economic changes that affect simulation outcomes, 
 | "Figure 5: Time Series Evolution" | `comprehensive_ht_vs_aave_analysis.py` | **High** | BTC price (\$76,342) + scenario names confirm source; import fix needed (D6) |
 | "Pool Price Evolution (top panel)" | `hourly_test_with_rebalancer.py` | **Very High** | 10/10 parameter match; visual match |
 | "Pool Price Evolution (bottom panel)" | `hourly_test_with_rebalancer.py` | **Very High** | Same output file |
-| "Agent Rebalancing Analysis" | `hourly_test_with_rebalancer.py` | **Very High** | Mean slippage \$2.143 ≈ PDF's \$2.09 |
+| "Agent Rebalancing Analysis" | `hourly_test_with_rebalancer.py` | **Low** | Slippage panels: sim produces \$0.005 vs Primer's \$2.14 (~430× off) due to D9 fee bypass; rebalance amount panels match within 6%. Source script confirmed but slippage values non-reproducible. |
 | "BTC Price Decline Over Time" | `hourly_test_with_rebalancer.py` | **Very High** | Linear \$100k→\$50k exactly matches config |
 | "Agent Health Factor Evolution" | `hourly_test_with_rebalancer.py` | **Low** | Threshold lines match but sawtooth absent; only 2 data points due to D8 |
 | "Yield Token Holdings Over Time" | `hourly_test_with_rebalancer.py` | **Low** | Linear instead of staircase; same D8 root cause |
 
-## Reproducibility Status (as of 2026-02-27)
+## Reproducibility Status (as of 2026-02-28)
 
 | Script | Runnable? | Config matches Primer? | Results reproduced in Primer? | Notes |
 |--------|-----------|----------------------|-------------------------------|-------|
 | `balanced_scenario_monte_carlo.py` | Yes (after import fix) | **No** — BTC price silently changed (D7) | **No** — 100/100% survival, ~$0 costs (expected: 100% vs 64%, $22 vs $32k) | Revert line 201 to `76_342.50` (restoring the configuration prior to breaking commit [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26)) |
 | `comprehensive_ht_vs_aave_analysis.py` | **No** — dead import (D6) | Yes | Not yet tested | Needs same import fix as `balanced_scenario_monte_carlo.py` |
-| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | **Partial** — missing `agent_snapshot_frequency_minutes` (D8) | **Partial** — 3/6 panels match (BTC, pool price, slippage); 3/6 fail (HF, YT, net position) due to D8 | Need `agent_snapshot_frequency_minutes = 1` + chart x-axis fix |
+| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | **Partial** — missing `agent_snapshot_frequency_minutes` (D8); fee bypass (D9) | **Partial** — 2/6 panels match (BTC, pool price); 1/6 partially matches (rebalance amounts OK, slippage ~430× off due to D9); 3/6 fail (HF, YT, net position due to D8) | Need D8 fix + D9 fix (`uniswap_v3_math.py:1282`) |
 
