@@ -52,11 +52,17 @@ Two categories of memory content have **different update rules**:
   - `evidence-supported`: sufficient code evidence found, awaiting or not yet presented for auditor confirmation
   - `verified`: auditor has confirmed the finding
 - **Generalize appropriately**: Ask "at what level of generality does this still make sense?"
+- **Principles over recollections**: Directions and rules should be self-contained and general. State the principle, not the specific case that motivated it. Reference specific cases only as example pointers (e.g., "→ see FCM_PRIMER_FIGURE_MAPPING.md D7 for example"), never as the direction itself.
 - **Manage entropy**: Periodically compact — merge redundant entries, trim stale content, promote recurring patterns to higher-level rules.
 
 ## Active Retrieval
 
-Memory files are not auto-injected — they live on a reference shelf. At session start or when context is needed, **proactively read** recent `SESSION_LOG.md` entries and relevant `WORKING_STYLE.md` sections. Connect current work to prior findings, open questions, and established patterns. Don't wait to be reminded.
+Memory files are not auto-injected — they live on a reference shelf. At session start, **proactively read**:
+1. `SESSION_LOG.md` — Audit State summary (top) + last 1–2 session entries + Open Questions table
+2. `WORKING_STYLE.md` — scan for directions relevant to the task at hand
+3. `CONCLUSIONS.md` — only if the session involves validating or revisiting findings
+
+Connect current work to prior findings, open questions, and established patterns. Don't wait to be reminded.
 
 ## Directive Confidence
 
