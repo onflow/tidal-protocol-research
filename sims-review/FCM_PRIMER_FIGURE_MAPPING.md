@@ -34,14 +34,12 @@ Section 4 contains **8 images** drawn from **3 distinct simulation scripts**. Th
 **Config** (`ComprehensiveComparisonConfig`, line 184):
 - 5 scenarios × 5 agents = 25 agents total; all "Balanced" (same params, different RNG seeds)
 - `initial_hf_range: (1.25, 1.45)`, `target_hf: 1.1`
-- BTC: `$100,000 → $90,000` (−10%) over 60 min
+- BTC: `$100,000 → $76,342.50` (−23.66%) over 60 min — **original config; see D7 for post-delivery tampering**
 
-**Evidence:**
-- Left heatmap (Survival Rate): HT = 100% in all 5 runs; AAVE = 40/60/80/60/80% → **average 64%** — matches PDF's "64%" claim exactly
-- Right heatmap (Average Cost): HT = \$19–\$22 per agent; AAVE = \$32,315–\$32,956 per liquidation; Reduction = 100%
-- 5 rows labelled "Balanced Run 1" through "Balanced Run 5" — exact match to scenario names in config
 
-**Discrepancy:** The PDF text (p.11) claims AAVE average cost of **\$53,000** but the chart shows **~\$32,000–\$33,000**. The \$53,000 figure appears in the prose of `reports/High_Tide_vs_AAVE_Executive_Summary_Clean.md` as well, but the same report embeds this chart. The prose figure (\$53k) is not reproducible from the `balanced_scenario_monte_carlo.py` outputs at their current config. Likely originates from a run with a more severe BTC decline (see §4.2 discrepancies below).
+**Reproduction attempt (2026-02-27):** Running the script at its [**current** commit \[10fd7ad\]](https://github.com/onflow/tidal-protocol-research/tree/10fd7ad4d197cb8b4bd8b8cf2c5cd17db04a9ef6) (setting config `btc_final_price = 90_000`, i.e. only −10% decline) produces 100% survival for **both** HT and AAVE, with near-zero costs. The scenario is too mild to trigger any AAVE liquidations. This is because the config was silently altered post-delivery (see D7).
+
+**Discrepancy:** The PDF text (p.11) claims AAVE average cost of **\$53,000** but the chart shows **~\$32,000–\$33,000**. The \$53,000 figure appears in the prose of `reports/High_Tide_vs_AAVE_Executive_Summary_Clean.md` as well, but the same report embeds this chart. The prose figure (\$53k) is not reproducible from `balanced_scenario_monte_carlo.py` outputs at any known config version. Likely originates from an uncommitted run with different parameters (e.g., higher initial debt or more severe decline).
 
 ---
 
@@ -57,8 +55,8 @@ Section 4 contains **8 images** drawn from **3 distinct simulation scripts**. Th
 - Scenarios: `Aggressive_1.01`, `Moderate_1.025`, `Conservative_1.05`, `Mixed_1.075`, `Balanced_1.1`
 
 **Evidence:**
-- BTC panel (top-left): \$100k → ~\$76k over exactly 60 minutes — rules out `balanced_scenario_monte_carlo.py` (which uses \$90k)
-   - There is only a [single commit](https://github.com/onflow/tidal-protocol-research/commit/7b901590dc6e868bab9d21115e5d56bab42dfa95) that adds file `balanced_scenario_monte_carlo.py` (all at once), without any commit touching this file thereafter. Hence, we have no evidence to assume that the figure might originate from `balanced_scenario_monte_carlo.py` with a different configuration.
+- BTC panel (top-left): \$100k → ~\$76k over exactly 60 minutes — consistent with `comprehensive_ht_vs_aave_analysis.py`'s `btc_final_price = 76_342.50`
+   - Note: `balanced_scenario_monte_carlo.py` originally also used \$76,342.50 before the D7 config change. However, the scenario names in the time series chart don't match "Balanced Run 1–5", confirming this figure comes from `comprehensive_ht_vs_aave_analysis.py`.
 - Health Factor panel (top-right): 5 agents visible with distinct starting HFs (~1.1–1.4), consistent with `initial_hf_range: (1.1, 1.5)` across scenarios; sawtooth pattern matches tri-health-factor rebalancing
 - Net Position panel (bottom-left): ~\$100k → ~\$75k tracking BTC price, single dominant line
 - YT Value panel (bottom-right): staircase sell-offs at rebalancing events
@@ -183,9 +181,9 @@ The PDF (p.10) describes the agent population as:
 
 No simulation in the repository uses this HF distribution. `balanced_scenario_monte_carlo.py` uses `initial_hf_range: (1.25, 1.45)` uniformly across all 5 scenarios. `comprehensive_ht_vs_aave_analysis.py` uses ranges 1.1–1.5 across scenarios. The "Conservative / Moderate / Aggressive" framing and the high HF ranges (2.1–2.4) are not instantiated in any agent factory function.
 
-### D4: BTC final price mismatch between §4.2 text and primary chart source
+### D4: BTC final price mismatch between §4.2 text and primary chart source — RESOLVED
 
-The PDF §4.2 text states BTC declines to \$76,342 (−23.66%). `balanced_scenario_monte_carlo.py` (the source of the performance matrix) uses `btc_final_price = 90_000` (−10%). The −23.66% decline is used in `comprehensive_ht_vs_aave_analysis.py` and `tri_health_factor_analysis.py`. The two §4.2 figures therefore come from **different scripts with different BTC scenarios**.
+~~The PDF §4.2 text states BTC declines to \$76,342 (−23.66%). `balanced_scenario_monte_carlo.py` (the source of the performance matrix) uses `btc_final_price = 90_000` (−10%).~~  **Resolved by D7** (see below for details). 
 
 ### D5: Initial HF discrepancy in §4.3 capacity study report
 
@@ -195,18 +193,49 @@ The PDF §4.2 text states BTC declines to \$76,342 (−23.66%). `balanced_scenar
 
 `balanced_scenario_monte_carlo.py` and `comprehensive_ht_vs_aave_analysis.py` are both in `RUNNABILITY_AUDIT.md` Category A (crash on import, wrong `sys.path`). The charts therefore cannot be reproduced from the repo in its current state without fixing line 24 of each file. Same applies to `hourly_test_with_rebalancer.py` (line 29).
 
+**Partial fix (2026-02-27):** `balanced_scenario_monte_carlo.py` import fixed (removed dead `target_health_factor_analysis` import; runs with `PYTHONPATH=.`). `comprehensive_ht_vs_aave_analysis.py` still has same dead import on line 33–35.
+
+### D7: Post-delivery config change ⚠️ breaking results reported in FCM Primer
+
+**Commit:** [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26) makes single change in `balanced_scenario_monte_carlo.py` (line 204) while moving file from repo root to `sim_tests/`:
+
+```diff
+- self.btc_final_price = 76_342.50  # 23.66% decline (consistent with previous analysis)
++ self.btc_final_price = 90_000.0  # 25.00% decline (consistent with previous analysis)
+```
+
+**Facts:**
+- The original value (\$76,342.50, −23.66%) matches the Primer PDF §4.2 text and produces the AAVE survival rates (40–80%) visible in the contractor-delivered `Figure 2: Performance Matrix Heatmap` (Primer)
+- The new value (\$90,000, −10%) is too mild to trigger any AAVE liquidations with HF 1.25–1.45 agents (lowest HF after decline: `1.25 × 0.9 ≈ 1.125`, well above liquidation threshold 1.0)
+- The comment was changed to "25.00% decline" which is also factually wrong for \$100k → \$90k (actual: 10%)
+- This is the **only diff** between the two file versions; no other config was altered
+- In the same commit, `target_health_factor_analysis.py` was deleted from the repo root, breaking the import on line 35 of both `balanced_scenario_monte_carlo.py` and `comprehensive_ht_vs_aave_analysis.py` — rendering both scripts non-runnable (D6)
+- The commit message is simply "update" with no explanation of the parameter change
+
+**Impact:** The committed codebase cannot reproduce the Primer's headline results. Running the script as committed yields 100/100% survival and ~\$0 costs for both protocols — the opposite of the claimed "100% vs 64% survival, 99.8% cost reduction."
+
+**Git verification:** `git diff` between pre-move (`1c9fce8:balanced_scenario_monte_carlo.py`) and post-move (`684c007:sim_tests/balanced_scenario_monte_carlo.py`) confirms this is the only change.
+
 ---
 
 ## Confidence Summary
 
 | Image | Script | Confidence | Limiting factor |
 |-------|--------|------------|-----------------|
-| "Figure 2: Performance Matrix Heatmap: High Tide vs AAVE" | `balanced_scenario_monte_carlo.py` | **High** | Visual + code match; \$53k prose discrepancy (D1) |
-| "Figure 5: Time Series Evolution Analysis" | `comprehensive_ht_vs_aave_analysis.py` | **High** | BTC final price (\$76,342) is the key discriminator; cannot re-run (D6) |
-| "Pool Price Evolution: True vs Pool YT Prices with ALM Interventions", sub-figure "True YT Price vs Pool YT Price" | `hourly_test_with_rebalancer.py` | **Very High** | 10/10 parameter match; visual match |
-| "Pool Price Evolution: True vs Pool YT Prices with ALM Interventions", sub-figure "Pool Price Deviation from True Price" | `hourly_test_with_rebalancer.py` | **Very High** | Same as above; same output file |
-| "Agent Rebalancing Analysis: Slippage Costs & Activity Patterns" | `hourly_test_with_rebalancer.py` | **Very High** | Mean slippage \$2.143 ≈ PDF's \$2.09 |
-| "BTC Price Decline Over Time" | `hourly_test_with_rebalancer.py` | **Very High** | Linear \$100k→\$50k exactly matches config |
-| "Agent Health Factor Evolution" | `hourly_test_with_rebalancer.py` | **Very High** | Threshold lines exactly match config values |
-| "Yield Token Holdings Over Time" | `hourly_test_with_rebalancer.py` | **Very High** | Staircase pattern; single-agent trace |
+| Figure 2: Performance Matrix Heatmap | `balanced_scenario_monte_carlo.py` | **High** | Visual + code match with **original** config (pre-D7); \$53k prose discrepancy (D1); current committed config cannot reproduce (D7) |
+| Figure 5: Time Series Evolution | `comprehensive_ht_vs_aave_analysis.py` | **High** | BTC price (\$76,342) + scenario names confirm source; import fix needed (D6) |
+| Pool Price Evolution (top panel) | `hourly_test_with_rebalancer.py` | **Very High** | 10/10 parameter match; visual match |
+| Pool Price Evolution (bottom panel) | `hourly_test_with_rebalancer.py` | **Very High** | Same output file |
+| Agent Rebalancing Analysis | `hourly_test_with_rebalancer.py` | **Very High** | Mean slippage \$2.143 ≈ PDF's \$2.09 |
+| BTC Price Decline Over Time | `hourly_test_with_rebalancer.py` | **Very High** | Linear \$100k→\$50k exactly matches config |
+| Agent Health Factor Evolution | `hourly_test_with_rebalancer.py` | **Very High** | Threshold lines exactly match config values |
+| Yield Token Holdings Over Time | `hourly_test_with_rebalancer.py` | **Very High** | Staircase pattern; single-agent trace |
+
+## Reproducibility Status (as of 2026-02-27)
+
+| Script | Runnable? | Config matches Primer? | Notes |
+|--------|-----------|----------------------|-------|
+| `balanced_scenario_monte_carlo.py` | Yes (after import fix) | **No** — BTC price silently changed (D7) | Revert line 201 to `76_342.50` to reproduce |
+| `comprehensive_ht_vs_aave_analysis.py` | **No** — dead import (D6) | Yes | Needs same import fix as balanced_mc |
+| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | Yes | Successfully reproduced §4.3 figures |
 
