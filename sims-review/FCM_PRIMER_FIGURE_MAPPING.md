@@ -131,7 +131,7 @@ All six §4.3 figures originate from a **single script and a single run** of `si
 
 **Chart function:** `_create_time_series_evolution_chart` (line 1177)  
 **Output file:** `Pool_Rebalancer_36H_Test/charts/time_series_evolution_analysis.png`  
-**Structure:** 2×2 panel (line 1238). The "Net Position" panel (bottom left) was **omitted** from the PDF.
+**Structure:** 2×2 panel (line 1238). The "Net Position" panel (bottom left) was **omitted** from the Primer PDF.
 
 - **"BTC Price Decline Over Time"** (top-left): 
   - Orange line, \$100,000 → \$50,000, linear over 0–36 h
@@ -139,14 +139,14 @@ All six §4.3 figures originate from a **single script and a single run** of `si
 
 - **"Agent Health Factor Evolution"** (top-right): 
   - Single-agent trace (representative: `test_agent_03`, line 1209) — **not an aggregate**
-  - Sawtooth oscillates between rebalancing trigger (1.025) and target (1.04)
-  - Three reference lines: Initial HF 1.1 (green solid), Target HF 1.04 (orange dashed), Rebalancing HF 1.025 (red dotted)
-  - Code at lines 1262–1264 — values taken directly from `self.config` attributes
+  - **Primer (image13):** sawtooth oscillates between rebalancing trigger (1.025) and target (1.04) over 0–36 h, per-minute resolution
+  - **Our reproduction:** linear drop from 1.1 to ~1.035, x-axis 0–0.0175 h (~1 min) — **does NOT match**
+  - Three reference lines: Initial HF 1.1 (green solid), Target HF 1.04 (orange dashed), Rebalancing HF 1.025 (red dotted) — these match
+  - **Root cause (D8):** two compounding bugs prevent reproduction; see D8 below
 
 - **"Yield Token Holdings Over Time"** (bottom-right): 
-  - Green staircase declining ~73,000 → ~40,000 units
-  - Each step = one rebalancing event (YT sold to repay MOET debt)
-  - Gradual overall decline tracks BTC price drop (less collateral value → more frequent/larger sales)
+  - **Primer:** green staircase declining ~73,000 → ~40,000 units over 36 h, step pattern from rebalancing events
+  - **Our reproduction:** linear decline ~78,000 → ~54,000 over 0–0.0175 h — same D8 bugs apply, **does NOT match**
 
 ---
 
@@ -216,26 +216,60 @@ No simulation in the repository uses this HF distribution. `balanced_scenario_mo
 
 **Git verification:** `git diff` between pre-move (`1c9fce8:balanced_scenario_monte_carlo.py`) and post-move (`684c007:sim_tests/balanced_scenario_monte_carlo.py`) confirms this is the only change.
 
+### D8: §4.3 time-series figures not reproducible — snapshot frequency + chart x-axis bugs
+
+**Affected figures:** "Agent Health Factor Evolution", "Yield Token Holdings Over Time", "Net Position Value Over Time" (all from the 2×2 `time_series_evolution_analysis.png`)
+
+**Bug (i) — Engine snapshot frequency:**
+`high_tide_vault_engine.py:685` defaults `agent_snapshot_frequency_minutes` to 1440 (daily). For a 36h sim, this yields only 2 snapshots (minute 0 and 1440). The `PoolRebalancer24HConfig` in `hourly_test_with_rebalancer.py` never overrides this attribute. The Primer's sawtooth HF pattern requires per-minute snapshots (`agent_snapshot_frequency_minutes = 1`), as the engine's own comment states: "can be every minute for crash studies."
+
+**Bug (ii) — Chart x-axis mapping:**
+`hourly_test_with_rebalancer.py:1202` computes `hour = i / 60.0` using the `enumerate` index rather than the snapshot's actual `minute` field. With 2 snapshots at indices 0 and 1, x-axis shows 0–0.017h instead of 0–24h. The correct code would be `hour = health_snapshot["minute"] / 60.0`.
+
+**Impact:** Three of the six §4.3 panels are unrecognizable vs the Primer. The BTC price panel (separate data source), pool price evolution, and slippage analysis are unaffected.
+
+**Fix required:** Set `agent_snapshot_frequency_minutes = 1` in config + use actual `minute` field in chart code.
+
+<details>
+<summary><em>Git origin of Bug (i):</em></summary>
+
+Commit `2fd742d` (2025-09-26, `ibcflan <connor@unitzero.io>`, message: "updates") introduced the `minute % 1440 == 0` gate in both `high_tide_vault_engine.py` and `aave_protocol_engine.py`. Before this commit, the engine recorded agent health **every minute** unconditionally — consistent with the Primer's per-minute sawtooth pattern.
+
+This commit landed **one day after** `684c007` (2025-09-25), which added `hourly_test_with_rebalancer.py` to the repo. The optimization was for year-long backtests (`full_year_sim.py`, `aave_full_year_sim.py`, also added in the same commit) but silently broke the 36h crash study.
+
+Commit `acc4657` (2025-11-21) later made the frequency configurable via `agent_snapshot_frequency_minutes` (default 1440), but no existing script sets this parameter.
+
+**Collateral behavioral changes in commit `2fd742d`** (same `high_tide_agent.py` diff):
+1. BTC price initialization changed from hardcoded `$100,000` to using `initial_balance` parameter — alters position sizing
+2. MOET balance initialization: `0.0` → `moet_to_borrow` — critical fix for YT purchase flow
+3. Leverage check throttled: every-minute → daily (`minute % 1440 == 0`) — reduces leverage-up opportunities from 525,600/year to 365/year
+4. Added MOET balance deduction on YT purchase — critical accounting fix (agents previously had unbounded MOET)
+
+Items #2–#4 are substantive economic changes that affect simulation outcomes, not just reporting optimizations. All shipped under the commit message "updates."
+
+</details>
+
+
 ---
 
 ## Confidence Summary
 
 | Image | Script | Confidence | Limiting factor |
 |-------|--------|------------|-----------------|
-| Figure 2: Performance Matrix Heatmap | `balanced_scenario_monte_carlo.py` | **High** | Visual + code match with **original** config (pre-D7); \$53k prose discrepancy (D1); current committed config cannot reproduce (D7) |
-| Figure 5: Time Series Evolution | `comprehensive_ht_vs_aave_analysis.py` | **High** | BTC price (\$76,342) + scenario names confirm source; import fix needed (D6) |
-| Pool Price Evolution (top panel) | `hourly_test_with_rebalancer.py` | **Very High** | 10/10 parameter match; visual match |
-| Pool Price Evolution (bottom panel) | `hourly_test_with_rebalancer.py` | **Very High** | Same output file |
-| Agent Rebalancing Analysis | `hourly_test_with_rebalancer.py` | **Very High** | Mean slippage \$2.143 ≈ PDF's \$2.09 |
-| BTC Price Decline Over Time | `hourly_test_with_rebalancer.py` | **Very High** | Linear \$100k→\$50k exactly matches config |
-| Agent Health Factor Evolution | `hourly_test_with_rebalancer.py` | **Very High** | Threshold lines exactly match config values |
-| Yield Token Holdings Over Time | `hourly_test_with_rebalancer.py` | **Very High** | Staircase pattern; single-agent trace |
+| "Figure 2: Performance Matrix Heatmap" | `balanced_scenario_monte_carlo.py` | **High** | Visual + code match with **original** config (pre-D7); \$53k prose discrepancy (D1); current committed config cannot reproduce (D7) |
+| "Figure 5: Time Series Evolution" | `comprehensive_ht_vs_aave_analysis.py` | **High** | BTC price (\$76,342) + scenario names confirm source; import fix needed (D6) |
+| "Pool Price Evolution (top panel)" | `hourly_test_with_rebalancer.py` | **Very High** | 10/10 parameter match; visual match |
+| "Pool Price Evolution (bottom panel)" | `hourly_test_with_rebalancer.py` | **Very High** | Same output file |
+| "Agent Rebalancing Analysis" | `hourly_test_with_rebalancer.py` | **Very High** | Mean slippage \$2.143 ≈ PDF's \$2.09 |
+| "BTC Price Decline Over Time" | `hourly_test_with_rebalancer.py` | **Very High** | Linear \$100k→\$50k exactly matches config |
+| "Agent Health Factor Evolution" | `hourly_test_with_rebalancer.py` | **Low** | Threshold lines match but sawtooth absent; only 2 data points due to D8 |
+| "Yield Token Holdings Over Time" | `hourly_test_with_rebalancer.py` | **Low** | Linear instead of staircase; same D8 root cause |
 
 ## Reproducibility Status (as of 2026-02-27)
 
-| Script | Runnable? | Config matches Primer? | Notes |
-|--------|-----------|----------------------|-------|
-| `balanced_scenario_monte_carlo.py` | Yes (after import fix) | **No** — BTC price silently changed (D7) | Revert line 201 to `76_342.50` to reproduce |
-| `comprehensive_ht_vs_aave_analysis.py` | **No** — dead import (D6) | Yes | Needs same import fix as balanced_mc |
-| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | Yes | Successfully reproduced §4.3 figures |
+| Script | Runnable? | Config matches Primer? | Results reproduced in Primer? | Notes |
+|--------|-----------|----------------------|-------------------------------|-------|
+| `balanced_scenario_monte_carlo.py` | Yes (after import fix) | **No** — BTC price silently changed (D7) | **No** — 100/100% survival, ~$0 costs (expected: 100% vs 64%, $22 vs $32k) | Revert line 201 to `76_342.50` (restoring the configuration prior to breaking commit [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26)) |
+| `comprehensive_ht_vs_aave_analysis.py` | **No** — dead import (D6) | Yes | Not yet tested | Needs same import fix as `balanced_scenario_monte_carlo.py` |
+| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | **Partial** — missing `agent_snapshot_frequency_minutes` (D8) | **Partial** — 3/6 panels match (BTC, pool price, slippage); 3/6 fail (HF, YT, net position) due to D8 | Need `agent_snapshot_frequency_minutes = 1` + chart x-axis fix |
 
