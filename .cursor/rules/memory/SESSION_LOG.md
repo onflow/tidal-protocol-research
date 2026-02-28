@@ -81,6 +81,17 @@ Extracted: "Simulation Execution" directions (5) → `WORKING_STYLE.md`
 
 ---
 
+## 2026-02-27: Figure 2 Reproduction Failure — Root Cause Identified
+
+Ran `balanced_scenario_monte_carlo.py` (after import fix). Result: 100/100% survival, ~$0 costs for both HT and AAVE — completely divergent from Primer's image17 (100% vs 64%, $22 vs $32k).
+
+**Root cause:** Commit `684c007` (2025-09-25, contractor `ibcflan`) changed `btc_final_price` from `76_342.50` (−23.66%) to `90_000.0` (−10%) while moving file to `sim_tests/`. Same commit deleted `target_health_factor_analysis.py`, breaking imports. Comment falsely claims "25.00% decline." This is a single-line diff — no other config changes.
+
+**Impact:** All §4.2 headline claims (99.8% cost reduction, 100% vs 64% survival) are non-reproducible from committed code.
+→ Updated `FCM_PRIMER_FIGURE_MAPPING.md`: added D7, resolved D4, added Reproducibility Status table.
+
+---
+
 ## Open Questions (cross-session)
 
 | ID | Question | Since | Refs |

@@ -1,6 +1,6 @@
 # Working Style Directions
 
-Last updated: 2026-02-20
+Last updated: 2026-02-27
 
 ## Auditor Profile
 
@@ -52,7 +52,7 @@ Last updated: 2026-02-20
 | Piped input for prompts | 1 | 2026-02-27 | Use `printf` with explicit `\n` per prompt answer (e.g., `printf "\nN\n"` for two prompts). Never `echo ""` for multi-prompt scripts — it only provides one newline |
 | Unbuffered + filtered output | 1 | 2026-02-27 | `PYTHONUNBUFFERED=1` for real-time output; `grep --line-buffered -v "DEBUG"` to suppress debug noise while preserving streaming |
 | Timestamped descriptive logs | 1 | 2026-02-27 | Always `tee` to `tidal_protocol_sim/results/<descriptive_variant>_$(date +%Y%m%d_%H%M%S).log`. Include scenario variant in filename (e.g., `no_arb_delay`, `moderate`) |
-| Virtual environment | 1 | 2026-02-27 | Activate `source /Users/alex/Development/PythonVEs/FlowCreditMarkets/bin/activate` first; run from project root `/Users/alex/Git/tidal-protocol-research`. The venv has `tidal_protocol_sim` as editable install, so `PYTHONPATH=.` is not needed |
+| Virtual environment | 4 | 2026-02-27 | Venv: `/Users/alex/Development/PythonVEs/FlowCreditMarkets`; cwd: `/Users/alex/Git/tidal-protocol-research`. Use these internally for verification. **Do NOT include venv activation or cd in proposed bash commands** — auditor handles standard setup. Only include deviations (e.g., `PYTHONPATH=.`) if required; when included, prefix the command block with a comment stating the expected cwd (e.g., `# Run from: /Users/alex/Git/tidal-protocol-research`). **`tidal_protocol_sim` is NOT an editable install** — always set `PYTHONPATH=.` (no setup.py/pyproject.toml; confirmed 2026-02-27) |
 
 ## Problem-Specific (current focus)
 
