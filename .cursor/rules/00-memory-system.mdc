@@ -14,7 +14,7 @@ You maintain a persistent memory system in `.cursor/rules/memory/`. This system 
 | `WORKING_STYLE.md` | Directions about how to work with the auditor |
 | `TECHNICAL.md` | Domain knowledge: terminology, formulas, algorithms |
 | `CONCLUSIONS.md` | Validated/invalidated findings and open questions |
-| `SESSION_LOG.md` | Temporal record of significant interactions and system changes |
+| `SESSION_LOG.md` | Per-session record: technical insights learned, artifacts created, patterns extracted, open questions. Not operational narration. |
 
 ## When to Update Memory
 
@@ -24,6 +24,9 @@ You maintain a persistent memory system in `.cursor/rules/memory/`. This system 
 3. Was a direction given about working style? → `WORKING_STYLE.md`
 4. Was a conclusion validated or invalidated? → `CONCLUSIONS.md`
 5. Was an assumption confirmed or refuted? → `CONCLUSIONS.md`
+6. Did this session produce technical insights, artifacts, or open questions worth carrying forward? → `SESSION_LOG.md` (update incrementally during session, not only at the end)
+
+**Pattern extraction trigger**: When something takes 3+ iterations to get right (documentation, code, analysis), extract the pattern into `WORKING_STYLE.md` as a direction. Don't wait for the auditor to point it out.
 
 ### Validation Gate — Scope and Limits
 
@@ -42,12 +45,18 @@ Two categories of memory content have **different update rules**:
 
 ## How to Update
 
-- **Be concise**: High information density, no filler
+- **Snippets over sentences**: Use information-dense fragments, not full prose. Prefer `key: value` and bullet fragments over paragraphs.
+- **References over copies**: Point to artifacts (`→ sims-review/FILE.md`) instead of duplicating content. Accompany with a one-line description only.
 - **Track provenance**: Note when/why something was added
 - **Mark status**: verified | evidence-supported | unverified | disputed | invalidated
   - `evidence-supported`: sufficient code evidence found, awaiting or not yet presented for auditor confirmation
   - `verified`: auditor has confirmed the finding
 - **Generalize appropriately**: Ask "at what level of generality does this still make sense?"
+- **Manage entropy**: Periodically compact — merge redundant entries, trim stale content, promote recurring patterns to higher-level rules.
+
+## Active Retrieval
+
+Memory files are not auto-injected — they live on a reference shelf. At session start or when context is needed, **proactively read** recent `SESSION_LOG.md` entries and relevant `WORKING_STYLE.md` sections. Connect current work to prior findings, open questions, and established patterns. Don't wait to be reminded.
 
 ## Directive Confidence
 

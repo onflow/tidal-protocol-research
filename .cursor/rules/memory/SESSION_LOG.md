@@ -1,198 +1,100 @@
 # Session Log
 
-Temporal record of significant interactions and system changes.
+Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-reference artifacts instead of duplicating content.
 
 ---
 
 ## 2026-02-03: System Genesis
 
-### Context
-Auditor initiated memory system creation for Tidal Protocol audit. Goal: enable progressive abstraction of codebase for in-depth review.
+Memory system created. Architecture: file-based Markdown in `.cursor/rules/memory/`, four-level hierarchy, recursive self-evolution.
 
-### Key Decisions Made
-1. **Memory architecture**: File-based Markdown in `.cursor/rules/memory/`
-2. **Four-level hierarchy**: Technical → Working-style → Organization rules → Meta-rules
-3. **Recursive self-evolution**: System responsible for evolving its own rules
-4. **Inspiration source**: OpenClaw memory system (file-based, chunked, hybrid search)
+Files: `00-memory-system.mdc`, `01-audit-interaction.mdc`, `02-technical-domain.mdc`, `WORKING_STYLE.md`, `TECHNICAL.md`, `CONCLUSIONS.md`, `SESSION_LOG.md`
 
-### Directions Established
-
-#### Technical Domain
-- Abstract algorithms layer-by-layer
-- Use formulas and pseudo-code, not verbose prose
-- Track verification status of all claims
-
-#### Working Style
-- Top-down presentation (general → specific)
-- High information density
-- Mutual fallibility acknowledged
-- Directive confidence scales with reinforcement
-- Proactive verification for important applications
-- Generalize directions to appropriate scope
-
-#### Meta-Level
-- Memory system rules themselves are subject to evolution
-- Do not wait for explicit instruction to improve system
-- More established rules are more stable
-- Log significant changes with rationale
-
-### Codebase Overview Obtained
-Tidal Protocol simulation covers:
-- Lending protocol with MOET stablecoin
-- High Tide yield vaults
-- Uniswap V3 concentrated liquidity
-- Agent-based simulation (lenders, liquidators, arbitrageurs)
-- Stress testing framework
-
-Key abstraction targets identified:
-1. Uniswap V3 mathematics
-2. Health factor system
-3. MOET economics
-4. Yield token mechanics
-5. Agent decision logic
-6. Liquidation mechanics
-7. Pool rebalancing
-
-### System Files Created
-- `00-memory-system.mdc`: Core memory management instructions
-- `01-audit-interaction.mdc`: Working-style directions
-- `02-technical-domain.mdc`: Technical knowledge structure
-- `memory/WORKING_STYLE.md`: Direction tracking
-- `memory/TECHNICAL.md`: Domain knowledge
-- `memory/CONCLUSIONS.md`: Findings tracking
-- `memory/SESSION_LOG.md`: This file
+Codebase overview: lending protocol + MOET stablecoin + High Tide yield vaults + Uniswap V3 + agent-based sim + stress testing. Seven abstraction targets identified → see `02-technical-domain.mdc`.
 
 ---
 
-## System Evolution Log
+## 2026-02-03: MOET Pricing Correction
 
-| Date | Change | Rationale | Impact |
-|------|--------|-----------|--------|
-| 2026-02-03 | Initial system creation | Bootstrap for audit | Full system |
-| 2026-02-06 | First validated finding recorded | Discrepancy check bug confirmed | CONCLUSIONS.md updated |
-| 2026-02-07 | Validation gate added | Process correction: findings need auditor sign-off before `verified` status | Rules + interaction patterns updated |
+MOET ≠ $1 USD peg. Correct: `MOET_price = k × geometric_mean(backing_assets)`. Codebase has stale $1 assumptions throughout.
+→ Created `sims-review/MOET_DOLLAR_PEG_INSTANCES.md` (tracking file)
+→ `TECHNICAL.md`: $1 peg marked **invalidated**
 
 ---
 
-## 2026-02-03: Proactive Engagement Generalization
+## 2026-02-06: Discrepancy Check Bug
 
-### Direction Received
-1. Active validation seeking: Don't wait passively; present evidence and ask to validate
-2. Meta-direction: Evaluate before extending; manage complexity through abstraction
-
-### Evaluation Performed
-- "Proactive Verification" (direction compliance) and "Active validation seeking" (findings) are both instances of broader principle: **Don't be passive**
-- Merged into "Proactive Engagement" with 2 sub-cases rather than 2 separate directions
-- Added "When Finding Evidence" interaction pattern to rule file
-
-### Applied To
-- `01-audit-interaction.mdc`: Generalized principle + new interaction pattern
-- `WORKING_STYLE.md`: Consolidated to single direction with reinforcement=2
-- `AUDITOR_GUIDE.md`: Updated (prior edit)
-
----
-
-## 2026-02-03: Auditor Guide Created
-
-### Context
-Created practical guide for auditor to work with the memory system in Phase 2.
-
-### Key Content
-- Quick start instructions (3 steps)
-- Learning loop explanation
-- Four suggested starting points for audit
-- Tips for effective collaboration
-- How to inspect and edit memory directly
-
-### Auditor Profile Noted
-- Computer scientist, experienced software engineer
-- In-depth Python and data science experience
-- Some economics background
-- Familiar with Cursor IDE
-
----
-
-## 2026-02-03: MOET Pricing Model Correction
-
-### Auditor Directive
-MOET is **not** pegged to $1 USD. This is an outdated assumption in the codebase.
-
-### Correct Model
-MOET is backed by the basket of assets collateralizing loans denominated in MOET:
-```
-MOET_price = k × geometric_mean(backing_assets)
-```
-Where `k` is a scaling factor (ratio of token supply to total backing assets).
-
-### Actions Taken
-1. Created `sims-review/MOET_DOLLAR_PEG_INSTANCES.md` to track outdated $1 peg assumptions
-2. Updated TECHNICAL.md: marked MOET $1 peg as **invalidated**, added correct definition
-3. Added problem-specific direction to track instances as encountered
-
-### Audit Task
-Throughout review, log all code/docs that assume MOET = $1 to the tracking file.
-
----
-
-## 2026-02-06: Discrepancy Check Bug Identified
-
-### Context
-Auditor ran simulation `run_study_1_2021_mixed_symmetric.py` and observed "ACCOUNTING ERROR DETECTED!" in output with $541.96 discrepancy.
-
-### Investigation
-Traced through code to understand:
-1. How `total_initial_value_invested` is computed (YieldTokenManager)
-2. How `current_moet_debt` and `total_interest_accrued` are tracked
-3. The discrepancy check formula at `full_year_sim.py:2951`
-
-### Finding
-**The discrepancy check has a logical bug, not the simulation.**
-
-The formula `debt - total_interest_accrued` assumes this equals remaining principal, but:
-- `total_interest_accrued` tracks ALL historical interest (including on repaid debt)
-- It is **never decremented** when debt is repaid
-- Therefore the formula is invalid after any debt repayment
-
-### Evidence
-- Grep: `total_interest_accrued.*-=` returns zero matches
-- Code trace: debt repayment only modifies `moet_debt`
-- Mathematical proof via worked example
-
-### Documentation
-Created `sims-review/DISCREPANCY_CHECK_BUG_ANALYSIS.md` with full analysis.
-
-### Status
-Validated finding. Core simulation accounting is correct; only the check logic is flawed.
+`full_year_sim.py:2951` reports false "ACCOUNTING ERROR" ($541.96). Root cause: `total_interest_accrued` never decremented on debt repayment, so `debt - total_interest_accrued ≠ remaining principal` after any repayment. **Simulation accounting is correct; only the check is flawed.**
+→ `sims-review/DISCREPANCY_CHECK_BUG_ANALYSIS.md` — status: **verified**
 
 ---
 
 ## 2026-02-07: Process Correction — Validation Gate
 
-### Auditor Feedback
-Over multiple exchanges, I extracted the High Tide rebalancing mechanics (HF formula, tri-health thresholds, debt reduction formula, checking frequency) but committed the discrepancy check finding to CONCLUSIONS.md without explicitly asking the auditor to validate first. The auditor pointed out I should have recognized this as a validation opportunity and asked before writing to memory.
-
-### Root Cause Analysis
-- `01-audit-interaction.mdc` "When Finding Evidence" pattern says to ask for validation
-- But `00-memory-system.mdc` "When to Update Memory" rules didn't require auditor confirmation before writing — they triggered on "concept introduced" not "concept confirmed"
-- The gap: interaction rules said one thing, memory rules didn't enforce it
-
-### Fixes Applied
-1. Added "Validation Gate for Technical Findings" section to `00-memory-system.mdc`
-2. Added "Recognizing Validation Opportunities" pattern to `01-audit-interaction.mdc`
-3. Added process-failure self-evaluation questions to recursive self-evolution section
-4. Added "Validation gate for memory" direction to `WORKING_STYLE.md`
-5. Reinforced "Proactive engagement" (+1, now 3 reinforcements)
-
-### Pending
-High Tide rebalancing mechanics finding presented for auditor validation — awaiting confirmation before committing to TECHNICAL.md as verified.
+Committed finding to CONCLUSIONS.md without auditor sign-off. Gap: `00-memory-system.mdc` triggers didn't require confirmation; `01-audit-interaction.mdc` did. Fixed: added validation gate to both rule files, added self-evaluation trigger for process failures.
 
 ---
 
-## Pending System Improvements
+## 2026-02-20: Pool Rebalancer & FCM Primer Mapping
 
-*Ideas for system evolution to consider:*
+→ `sims-review/FCM_PRIMER_FIGURE_MAPPING.md` — all 8 FCM Primer §4 figures mapped to source scripts
+→ `sims-review/RUNNABILITY_AUDIT.md` — all sim scripts catalogued by runnability
+Ran `hourly_test_with_rebalancer.py` mode 3 (arb delay) — first audit execution
 
-1. May need category for "code patterns" distinct from "algorithms"
-2. Consider adding priority/importance ranking to technical items
-3. Evaluate whether SESSION_LOG needs summarization/compaction over time
-4. Consider adding auditor expertise profile to WORKING_STYLE.md for calibration
+---
+
+## 2026-02-27: Pool Rebalancer Comparison
+
+Ran mode 1 (no arb delay), compared with mode 3 run.
+→ `sims-review/POOL_REBALANCER_36H_COMPARISON.md`
+
+**Bugs/findings**:
+- `enable_arb_delay` prompt missing `else` branch — mode 1 always ran with delay. Fixed.
+- Arb delay: frozen acquisition-time price for settlement (no market risk during hold)
+- **F1**: Algo rebalancer $0 profit on $3.6M volume — open
+- **F2**: off-by-one in `range(2160)` prevents 3rd ALM trigger — open
+- `reports/High_Tide_Capacity_Study_w_Arbing.md` stale (HF 1.25 vs code's 1.1)
+
+Extracted: "Simulation Execution" directions (5) → `WORKING_STYLE.md`
+
+---
+
+## 2026-02-20: Flash Crash Simulation Analysis
+
+→ `sims-review/FLASH_CRASH_SIMULATION_SUMMARY.md` — full summary with code refs
+
+**Key insights**:
+- Single compound scenario (YT+BTC crash), 3 severity levels, 150 agents/$20M, 2-day sim. Protocol resilience test, not HT-vs-AAVE comparison.
+- Liquidity evaporation modeled *exogenously* (predetermined throttling curve on rebalancers, not driven by realized P&L). The liquidity drop is an assumption, not a result.
+- Arbitrageurs modeled as 2 stylized agents: `ALMRebalancer` (12h schedule) + `AlgoRebalancer` (25bps threshold). Simplifications: fixed capital, frictionless exit, no strategic behavior, no competition.
+- **Asymmetric Algo treatment**: full power during crash (drives pool down toward manipulated oracle), throttled during recovery (can't push back up). Deliberate worst-case design.
+
+**Bugs found**:
+- B1: `oracle_outlier_magnitude` — stale reference, never implemented. Script unrunnable as received. Fixed → `oracle_volatility` + `yt_wick_magnitude`.
+- B2: Infinite leverage loop at min 920 — `moet_debt` resets to $0 after borrow, `HF=inf` re-triggers leverage. Pool drained → `ValueError`. Root cause: likely `protocol.borrow()` not persisting debt under advanced MOET system. **Open**.
+
+**Patterns extracted**:
+- Self-contained docs: ground domain terms in general concepts; back claims inline → `WORKING_STYLE.md`
+- 3+ iteration signal → extract pattern proactively → `WORKING_STYLE.md` + `00-memory-system.mdc`
+
+**System evolution**: Refined SESSION_LOG purpose, added update triggers, added active retrieval directive, compacted this file.
+
+---
+
+## Open Questions (cross-session)
+
+| ID | Question | Since | Refs |
+|----|----------|-------|------|
+| F1 | Algo rebalancer $0 profit on $3.6M volume — accounting bug or design? | 2026-02-27 | `POOL_REBALANCER_36H_COMPARISON.md` |
+| F2 | off-by-one in `range(2160)` — 3rd ALM trigger never fires | 2026-02-27 | `POOL_REBALANCER_36H_COMPARISON.md` |
+| B2 | Flash crash infinite leverage loop — `moet_debt` reset root cause | 2026-02-20 | `FLASH_CRASH_SIMULATION_SUMMARY.md` |
+
+## System Evolution Log
+
+| Date | Change | Rationale |
+|------|--------|-----------|
+| 2026-02-03 | Initial system creation | Bootstrap |
+| 2026-02-06 | First validated finding | Discrepancy check bug → CONCLUSIONS.md |
+| 2026-02-07 | Validation gate added | Process correction: need auditor sign-off |
+| 2026-02-20 | SESSION_LOG compacted | Entropy management: snippets over prose, refs over copies |
+| 2026-02-20 | Active retrieval + format directives | Memory must be proactively consulted, not just passively available |
