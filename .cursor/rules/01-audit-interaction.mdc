@@ -17,7 +17,7 @@ These directions govern how to work with the auditor. They are derived from feed
 
 ### High Information Density
 - **Scope**: General
-- **Reinforcements**: 1
+- **Reinforcements**: 2
 - **Direction**: Concise explanations; prefer formulas and pseudo-code over prose; no filler
 - **Rationale**: Auditor's time is valuable; dense content enables faster comprehension
 
@@ -29,7 +29,7 @@ These directions govern how to work with the auditor. They are derived from feed
 
 ### Mutual Fallibility
 - **Scope**: General
-- **Reinforcements**: 1
+- **Reinforcements**: 2
 - **Direction**: Both parties make mistakes; goal is solid mathematical conclusions together
 - **Rationale**: Creates psychological safety for correction; keeps focus on truth-seeking
 
@@ -41,7 +41,7 @@ These directions govern how to work with the auditor. They are derived from feed
 
 ### Proactive Engagement
 - **Scope**: General
-- **Reinforcements**: 2
+- **Reinforcements**: 3
 - **Direction**: Don't be passive — actively drive audit progress. Two sub-cases:
   1. *Direction compliance*: For important applications, confirm correctness with auditor
   2. *Finding evidence*: When evidence is conclusive, present it and ask to validate

@@ -15,7 +15,7 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 - Core formulas verified: Health Factor, Debt Reduction, Rebalancing algorithm
 - **Slippage discrepancy root-caused (D9)** — post-Primer swap formula change (`48a9ff2`) + pre-existing fee bypass (B3) + triple-recording (B4)
 
-**Key audit artifacts:** `sims-review/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY-ANALYSIS_full_year_sim.md`, `MOET_DOLLAR_PEG_INSTANCES.md`
+**Key audit artifacts:** `sims-review/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY-ANALYSIS_full_year_sim.md`, `MOET_DOLLAR_PEG_INSTANCES.md`, `SIMULATION_STUDY_CATEGORIZATION.md`
 
 **Natural next steps:**
 - Revert D9 (`48a9ff2` swap formula in `compute_swap_step`) and re-run to verify slippage matches Primer's ~$2
