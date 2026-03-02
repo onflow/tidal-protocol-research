@@ -13,12 +13,12 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 - `balanced_scenario_monte_carlo.py` executed (after import fix), reproduction fails due to post-delivery config change
 - Flash crash simulation analyzed (not executed to completion — B2 leverage loop blocks)
 - Core formulas verified: Health Factor, Debt Reduction, Rebalancing algorithm
-- **Uniswap V3 fee bypass bug found (D9/B3)** — swap loop omits fee from remaining, ~430× slippage undercount
+- **Slippage discrepancy root-caused (D9)** — post-Primer swap formula change (`48a9ff2`) + pre-existing fee bypass (B3) + triple-recording (B4)
 
-**Key audit artifacts:** `sims-review/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY_CHECK_BUG_ANALYSIS.md`, `MOET_DOLLAR_PEG_INSTANCES.md`
+**Key audit artifacts:** `sims-review/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY-ANALYSIS_full_year_sim.md`, `MOET_DOLLAR_PEG_INSTANCES.md`
 
 **Natural next steps:**
-- Fix D9 (`uniswap_v3_math.py:1282`) and re-run to verify slippage matches Primer's ~$2
+- Revert D9 (`48a9ff2` swap formula in `compute_swap_step`) and re-run to verify slippage matches Primer's ~$2
 - Fix D8 (snapshot frequency + chart x-axis) and re-run for full §4.3 reproduction
 - Revert D7 config and re-run `balanced_scenario_monte_carlo.py` for §4.2 reproduction
 - Fix `comprehensive_ht_vs_aave_analysis.py` import and test Figure 5
@@ -38,7 +38,7 @@ MOET pricing corrected: ≠ $1 peg; correct is `MOET_price = k × geometric_mean
 ## 2026-02-06: Discrepancy Check Bug — verified
 
 `full_year_sim.py:2951` false "ACCOUNTING ERROR" ($541.96). Root cause: `total_interest_accrued` never decremented on debt repayment. Sim accounting correct; check flawed.
-→ `sims-review/DISCREPANCY_CHECK_BUG_ANALYSIS.md`
+→ `sims-review/DISCREPANCY-ANALYSIS_full_year_sim.md`
 
 ---
 
@@ -105,7 +105,7 @@ Git origin: commit `2fd742d` (2025-09-26) introduced the 1440 gate + bundled sub
 6-step debugging pattern extracted from FCM Primer reproduction failures → `WORKING_STYLE.md § Simulation Reproduction Debugging`.
 Concrete examples: `sims-review/FCM_PRIMER_FIGURE_MAPPING.md` (D6–D8).
 
-Also: WORKING_STYLE.md compacted — removed directions that duplicate always-applied rules, consolidated communication directions, tightened structure.
+Also: WORKING_STYLE.md compacted — removed directions that duplicate always-applied rules, consolidated communication directions, tightened structure. **Post-mortem (2026-02-28): this compaction was overly aggressive — it eliminated tracking metadata for 5 core directives (mutual fallibility, directive confidence scaling, validation gate, generalization awareness, top-down presentation). Restored in restructure below.**
 
 ---
 
@@ -119,15 +119,39 @@ Three changes from self-evaluation:
 
 ---
 
-## 2026-02-28: Uniswap V3 Fee Bypass Bug (D9/B3) + Triple-Recording (B4)
+## 2026-02-28: Slippage Discrepancy Root Cause — Post-Primer Swap Formula Change (D9)
 
 Auditor-initiated investigation of ~430× slippage discrepancy between Primer figure (image19) and sim output (`agent_slippage_analysis.png`).
 
-**D9/B3 — Fee bypass:** `uniswap_v3_math.py:1282` subtracts `amount_in` instead of `amount_in + fee_amount` from `amount_specified_remaining`. Geometric series re-swaps the fee each iteration → 0.05% fee effectively bypassed. Primer's $2.14 is correct; current code produces $0.005.
+**Initial hypothesis (fee bypass) revised after git history cross-check.** Auditor directed two-step approach: (i) identify post-Primer changes causing discrepancy, (ii) catalog pre-existing bugs separately.
 
-**B4 — Triple-recording:** `engine.rebalancing_events` gets 3 appends per event (engine lines 536, 562, 628). Inflates counts/costs 3× but not per-event stats.
+**D9 — Swap formula change (category i):** Commit `48a9ff2` (2025-09-29, 4 days after `hourly_test_with_rebalancer.py` was added) replaced `get_amount0_delta` (Q96 integer math) with `get_amount0_delta_economic` (floating-point) for YT→MOET output in `compute_swap_step`. The original integer formula had ~0.25% truncation loss on concentrated stablecoin positions (producing ~$2 slippage per $842 trade). The replacement gives near-1:1 output (~$0.005 slippage). Primer generated in the 4-day window before this change.
 
-→ `FCM_PRIMER_FIGURE_MAPPING.md` updated: D9, B4, confidence downgrade for "Agent Rebalancing Analysis" (Very High → Low), reproducibility table updated.
+**B3 — Fee bypass (category ii, pre-existing):** `uniswap_v3_math.py:1282` omits `fee_amount` from `amount_specified_remaining` update. Present since swap function was first written. Causes fee to be re-swapped in subsequent loop iterations. Impact masked by integer truncation in original formula; amplified by floating-point formula.
+
+**B4 — Triple-recording (category ii, pre-existing):** `engine.rebalancing_events` gets 3 appends per event (engine lines 536, 562, 628). Present since `684c007`.
+
+**Methodology established:** For reproducing Primer results across all simulations: (i) revert post-Primer changes only, (ii) catalog pre-existing bugs separately for independent fixes.
+
+→ `FCM_PRIMER_FIGURE_MAPPING.md` updated: D9 rewritten (swap formula, not fee bypass), B3 reclassified as pre-existing, B4 documented.
+
+---
+
+## 2026-02-28: Memory System Restructure — Retention Policy
+
+**Trigger:** Auditor noticed 5 core directives had been dropped from WORKING_STYLE.md during a prior "compaction." Directives were still in `.mdc` rules but tracking metadata (reinforcement counts, dates, notes) was destroyed.
+
+**Root cause of the failure:** I treated "also exists in .mdc file" as sufficient reason to remove tracking from WORKING_STYLE.md. But `.mdc` = static instruction, WORKING_STYLE.md = learning record. Different purposes; removing one doesn't substitute for the other.
+
+**Key meta-learning (generalized):**
+- **Absence of corrective feedback signals compliance, not irrelevance.** A well-internalized directive that stops generating corrections is *more* important to retain, not less.
+- **Compaction must preserve provenance.** Merge and generalize — never silently delete. Reinforcement counts are the empirical record of what works.
+- **Terminology in audit docs:** Assume only finance/CS/Python is known. Conversation-local shorthand must become prose in `sims-review/` documents. Ask before introducing new nomenclature.
+
+**Changes made:**
+1. WORKING_STYLE.md restructured: restored 5 core principles with tracking; added Retention Policy section; added Memory Organization section; separated "Core Principles" from "Communication Style" and "Document Authoring"
+2. CONCLUSIONS.md: replaced "Category (i)/(ii)" labels with self-explanatory prose
+3. FCM_PRIMER_FIGURE_MAPPING.md: verified clean of conversation-local labels (already was)
 
 ---
 

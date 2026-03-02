@@ -7,7 +7,7 @@ Last updated: 2026-02-27
 ### Discrepancy Check Bug (2026-02-06)
 
 **Finding**: `full_year_sim.py:2951` "ACCOUNTING ERROR" is a **false positive**. `total_interest_accrued` never decremented on repayment, so the check formula is wrong. Core sim accounting is correct.
-→ `sims-review/DISCREPANCY_CHECK_BUG_ANALYSIS.md`
+→ `sims-review/DISCREPANCY-ANALYSIS_full_year_sim.md`
 
 ### Core Formulas (2026-02-07)
 
@@ -31,14 +31,19 @@ Engine defaults `agent_snapshot_frequency_minutes = 1440`; chart uses enumerate 
 No inter-minute cooldown, no minimum threshold, no gas costs. Agent can rebalance every minute (525,600×/year, 3 cycles each).
 → `TECHNICAL.md` §High Tide Rebalancing Limitations
 
-### D9: Uniswap V3 fee bypass in swap loop (2026-02-28)
+### D9: Post-Primer swap formula change breaks slippage reproduction (2026-02-28)
 
-`uniswap_v3_math.py:1282` subtracts only `amount_in` instead of `amount_in + fee_amount` from remaining. Fee re-swapped as geometric series → 0.05% fee effectively bypassed. Slippage ~430× too low ($0.005 vs correct ~$2.14). Primer values are correct; current code cannot reproduce them.
+Commit `48a9ff2` (2025-09-29) replaced `get_amount0_delta` (Q96 integer math, ~0.25% truncation loss) with `get_amount0_delta_economic` (float, near-1:1) for YT→MOET swaps. Primer generated in 4-day window before this change with original formula producing ~$2.14 slippage. Current code produces $0.005. **Post-Primer change — revert to reproduce Primer figures.**
 → `sims-review/FCM_PRIMER_FIGURE_MAPPING.md` §D9
 
-### B4: Triple-recording of rebalancing events (2026-02-28)
+### B3: Uniswap V3 fee bypass — pre-existing (2026-02-28)
 
-Each rebalancing appends 3× to `engine.rebalancing_events` (engine lines 536, 562, 628). Event counts and cost sums 3× inflated; per-event stats unaffected.
+`uniswap_v3_math.py:1282` omits `fee_amount` from `amount_specified_remaining`. Present since swap function creation (pre-`684c007`). Primer generated WITH this bug. Impact masked by integer truncation in original formula. **Pre-existing bug — fix independently of reproduction.**
+→ `sims-review/FCM_PRIMER_FIGURE_MAPPING.md` §B3
+
+### B4: Triple-recording of rebalancing events — pre-existing (2026-02-28)
+
+Each rebalancing appends 3× to `engine.rebalancing_events` (engine lines 536, 562, 628). Present since `684c007`. Event counts and cost sums 3× inflated; per-event stats unaffected. **Pre-existing bug — fix independently of reproduction.**
 → `sims-review/FCM_PRIMER_FIGURE_MAPPING.md` §B4
 
 ### AAVE Collateral Factor Inconsistency (2026-02-07)
@@ -74,5 +79,6 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Summary:
 | 2026-02-07 | AAVE collateral inconsistency | Evidence-supported | Code trace |
 | 2026-02-27 | D7 config change | Evidence-supported | git diff, reproduction run |
 | 2026-02-27 | D8 snapshot bugs | Evidence-supported | Code trace, reproduction run |
-| 2026-02-28 | D9 fee bypass | Evidence-supported | Code trace, Uniswap V3 ref comparison, reproduction run |
-| 2026-02-28 | B4 triple-recording | Evidence-supported | Code trace (3 append sites) |
+| 2026-02-28 | D9 swap formula change | Evidence-supported | git diff `684c007..48a9ff2`, code trace |
+| 2026-02-28 | B3 fee bypass (pre-existing) | Evidence-supported | git show `684c007`, Uniswap V3 ref comparison |
+| 2026-02-28 | B4 triple-recording (pre-existing) | Evidence-supported | Code trace (3 append sites at `684c007`) |

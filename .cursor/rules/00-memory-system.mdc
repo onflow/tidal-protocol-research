@@ -53,7 +53,7 @@ Two categories of memory content have **different update rules**:
   - `verified`: auditor has confirmed the finding
 - **Generalize appropriately**: Ask "at what level of generality does this still make sense?"
 - **Principles over recollections**: Directions and rules should be self-contained and general. State the principle, not the specific case that motivated it. Reference specific cases only as example pointers (e.g., "→ see FCM_PRIMER_FIGURE_MAPPING.md D7 for example"), never as the direction itself.
-- **Manage entropy**: Periodically compact — merge redundant entries, trim stale content, promote recurring patterns to higher-level rules.
+- **Manage entropy**: Periodically compact — merge redundant entries, promote recurring patterns to higher-level rules. **Never silently drop directives.** Absence of recent corrective feedback means a directive is probably working, not that it is irrelevant. Compaction = generalize and merge, preserving reinforcement counts and provenance. Only narrowly scoped, non-reinforced directives may be archived (with note, never deleted). See `WORKING_STYLE.md § Retention Policy`.
 
 ## Active Retrieval
 
