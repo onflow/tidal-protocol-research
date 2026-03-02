@@ -60,19 +60,27 @@ Two categories of memory content have **different update rules**:
 
 ## Active Retrieval
 
-Memory files are not auto-injected — they live on a reference shelf. At session start, **proactively read**:
+Memory files are not auto-injected — they live on a reference shelf. At session start, **proactively read and evaluate**:
+
 1. `SESSION_LOG.md` — Audit State summary (top) + last 1–2 session entries + Open Questions table
 2. `WORKING_STYLE.md` — scan for directions relevant to the task at hand
 3. `CONCLUSIONS.md` — only if the session involves validating or revisiting findings
+
+**Session-start health check** (start as quick triage alongside reading; escalate if something looks off):
+- Does anything feel unfamiliar? If so, has a directive been lost? → Check `CHANGELOG.md` or `git log`.
+- Is any file notably larger or smaller than expected? Growing → consider splitting. Shrinking → verify nothing was dropped.
+- Are there stale entries (e.g., "current focus" items that are resolved)?
+- **Escalation:** If any check raises a concern, request a dedicated maintenance prompt from the auditor rather than doing deep maintenance as a side effect of the current task.
 
 Connect current work to prior findings, open questions, and established patterns. Don't wait to be reminded.
 
 ## Directive Confidence
 
-Directions have varying stability based on reinforcement:
+Directions have varying stability based on reinforcement. This applies equally to auditor-given and self-prescribed directives:
 - **Frequently reinforced** → High compliance expected, stable
 - **Recently added** → Experimental, open to modification
 - **Contradicted** → Mark as invalidated, note correction
+- **Self-prescribed processes** → Treat as hypotheses. Each has an implicit goal; evaluate whether it's achieving that goal. Adapt or replace when evidence suggests a different approach would work better — that's learning, not forgetting.
 
 Track reinforcement count and last feedback date for working-style directions.
 
@@ -89,13 +97,26 @@ Track reinforcement count and last feedback date for working-style directions.
 - **Did I fail to follow a guideline?** If so, is the guideline unclear, or did I miss it? Fix accordingly.
 - **Did the auditor correct my process?** If so, which rule should have caught this? Update the rule to be more explicit.
 
+### Memory Maintenance Protocol
+
+Compaction/reorganization is a **deliberate activity** — never a side effect of another edit. When maintaining memory:
+
+1. **Read `CHANGELOG.md` first.** Recall past compaction failures and their causes.
+2. **Before removing or merging any entry:** state what you're removing, why, and verify it isn't the sole record of tracking metadata (reinforcement count, dates, provenance).
+3. **Prefer splitting over pruning.** If a file is large, create a topic file — don't delete content to shrink it.
+4. **Use `git log` on memory files** to verify you're not re-introducing a previously identified problem.
+5. **Log the maintenance action** in `CHANGELOG.md` with date and rationale.
+
+**Known failure mode (2026-02-27):** Compacted WORKING_STYLE.md while editing it for another purpose. Dropped 6 directives by conflating "also exists in .mdc files" with "safe to remove." Root cause: compaction was a side effect, not a deliberate act.
+
 ### Evolution Operations
 - **Extend**: Add categories, tracking fields, file types
 - **Refine**: Improve granularity or precision
 - **Abstract**: Merge similar rules into general principles
 - **Simplify**: Remove unused complexity
 - **Generalize**: Promote working patterns to broader application
-- **Compact**: Consolidate redundant content
+- **Split**: Move deep content to topic files when a section outgrows its container
+- **Compact**: Consolidate redundant content — follow Maintenance Protocol above
 
 ### Autonomy Principle
 Do not wait for explicit instruction to improve the system. When friction or inefficiency is detected, propose or enact changes. Log significant changes to `SESSION_LOG.md` with rationale.

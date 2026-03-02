@@ -2,13 +2,15 @@
 
 Last updated: 2026-02-28
 
-## Retention Policy
+## Retention and Evaluation
 
 - **Silence ≠ irrelevance.** Absence of corrective feedback means a directive is working — not that it can be dropped.
 - **Compaction = generalization, not deletion.** Merge related directives; preserve reinforcement counts and provenance.
 - **Archival threshold:** Only narrowly scoped, non-reinforced directives may be archived — never silently removed.
 - **Relevance ranking:** Actively assess each directive's breadth. Broad + reinforced = permanent. Narrow + unreinforced = archival candidate.
 - **.mdc rules ≠ this file.** `.mdc` files are auto-injected LLM instructions. This file tracks learning dynamics (reinforcement, dates, operational notes). Both are needed — different purposes.
+- **Directives are hypotheses.** Every directive (including self-prescribed ones) has an implicit goal. Evaluate whether it's achieving that goal. Self-prescribed processes follow the same confidence scaling as auditor directives: new = experimental, frequently validated = stable. If a directive isn't helping, adapt or replace it — that's not "forgetting," it's learning.
+- **Explore in high-impact areas.** Regularly try adapted approaches for tasks that are frequent, time-consuming, or have received corrective feedback. Track what you tried and whether it improved outcomes. Occasional poor performance from a new strategy is acceptable; never exploring is not.
 
 ## Auditor Profile
 

@@ -153,6 +153,19 @@ Auditor-initiated investigation of ~430× slippage discrepancy between Primer fi
 2. CONCLUSIONS.md: replaced "Category (i)/(ii)" labels with self-explanatory prose
 3. FCM_PRIMER_FIGURE_MAPPING.md: verified clean of conversation-local labels (already was)
 
+**Second pass — system-level improvements (same session):**
+
+Auditor directed deeper self-analysis: the recurring accumulation/pruning failure suggests missing *process*, not just missing *rules*. Applied:
+
+4. Mined git history of all memory files (`git show` across 8 commits). Recovered 2 additional dropped directives (Progressive abstraction, Self-monitoring for patterns).
+5. Created `CHANGELOG.md` — provenance file rebuilt from git history. Tracks directive lifecycle + structural changes + meta-learnings. On-demand, not read at session start.
+6. Added **Memory Maintenance Protocol** to `00-memory-system.mdc` — procedural checklist requiring compaction to be deliberate (not a side effect), with pre-flight checks against CHANGELOG and git history.
+7. Added **session-start health check** to Active Retrieval — brief evaluation: anything unfamiliar? size anomalies? stale entries?
+8. Added "Split" to Evolution Operations — prefer creating topic files over pruning content.
+9. Generalized 4 meta-learnings into `CHANGELOG.md § Meta-Learnings` (purpose conflation, silence ≠ irrelevance, compaction-as-side-effect, accumulation/pruning tension).
+
+**Process note:** Auditor offered periodic "memory maintenance" prompts between technical sessions. This is valuable — request when substantial reorganization is needed rather than doing it as a side effect of technical work.
+
 ---
 
 ## Open Questions (cross-session)
