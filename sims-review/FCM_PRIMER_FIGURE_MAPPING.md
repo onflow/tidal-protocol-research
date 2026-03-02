@@ -161,7 +161,7 @@ All six §4.3 figures originate from a **single script and a single run** of `si
 
 ---
 
-## Discrepancies and Counter-Indicators
+## Discrepancies and Counter-Indicators compared to Primer simulations
 
 ### D1: AAVE cost — \$53,000 (PDF prose) vs ~\$32,000 (chart)
 
@@ -174,7 +174,7 @@ The PDF text states "Avg Cost per Agent: \$53,000" for traditional liquidation. 
 
 The PDF prose in §4.2 claims "\$22 per agent." The performance matrix shows \$19–\$22, consistent. But §4.3 claims "\$2.09 per rebalance operation." These are not contradictory (§4.2 is total cost across all rebalances per agent; §4.3 is cost per individual rebalance event) but the distinction is not made explicit in the PDF.
 
-**Update** (2026-02-28): The \$2.09 figure appears to be the **correct** slippage value (fees + price impact for ~\$800 swaps on a \$500k pool with 0.05% fee tier). Current code produces \$0.005 due to the fee bypass bug (D9). The \$22 total cost per agent (\$2.09 × ~10 rebalances) is consistent — but neither value is reproducible from committed code.
+**Update (2026-02-28):** The \$2.09 is the slippage produced by the original `get_amount0_delta` formula (Q96 integer math with ~0.25% truncation on concentrated stablecoin positions). Commit `48a9ff2` (2025-09-29) replaced this with `get_amount0_delta_economic` (floating-point, near-1:1 output), reducing slippage to \$0.005 — see D9. The \$22 total cost per agent (\$2.09 × ~10 rebalances) is self-consistent. Reproducible by reverting D9.
 
 ### D3: Agent risk profile description (§4.2) does not match any simulation
 
@@ -225,10 +225,10 @@ No simulation in the repository uses this HF distribution. `balanced_scenario_mo
 **Affected figures:** "Agent Health Factor Evolution", "Yield Token Holdings Over Time", "Net Position Value Over Time" (all from the 2×2 `time_series_evolution_analysis.png`)
 
 **Bug (i) — Engine snapshot frequency:**
-`high_tide_vault_engine.py:685` defaults `agent_snapshot_frequency_minutes` to 1440 (daily). For a 36h sim, this yields only 2 snapshots (minute 0 and 1440). The `PoolRebalancer24HConfig` in `hourly_test_with_rebalancer.py` never overrides this attribute. The Primer's sawtooth HF pattern requires per-minute snapshots (`agent_snapshot_frequency_minutes = 1`), as the engine's own comment states: "can be every minute for crash studies."
+[`high_tide_vault_engine.py:685`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L685) defaults `agent_snapshot_frequency_minutes` to 1440 (daily). For a 36h sim, this yields only 2 snapshots (minute 0 and 1440). The [`PoolRebalancer24HConfig` in `hourly_test_with_rebalancer.py`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/a626658d4adf9ad21bcf1c96391164a80bfee9a6/sim_tests/hourly_test_with_rebalancer.py#L39) never overrides this attribute. The Primer's sawtooth HF pattern requires per-minute snapshots (`agent_snapshot_frequency_minutes = 1`), as the engine's own comment states: "can be every minute for crash studies."
 
 **Bug (ii) — Chart x-axis mapping:**
-`hourly_test_with_rebalancer.py:1202` computes `hour = i / 60.0` using the `enumerate` index rather than the snapshot's actual `minute` field. With 2 snapshots at indices 0 and 1, x-axis shows 0–0.017h instead of 0–24h. The correct code would be `hour = health_snapshot["minute"] / 60.0`.
+[`hourly_test_with_rebalancer.py:1202`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/a626658d4adf9ad21bcf1c96391164a80bfee9a6/sim_tests/hourly_test_with_rebalancer.py#L1202) computes `hour = i / 60.0` using the `enumerate` index rather than the snapshot's actual `minute` field. With 2 snapshots at indices 0 and 1, x-axis shows 0–0.017h instead of 0–24h. The correct code would be `hour = health_snapshot["minute"] / 60.0`.
 
 **Impact:** Three of the six §4.3 panels are unrecognizable vs the Primer. The BTC price panel (separate data source), pool price evolution, and slippage analysis are unaffected.
 
@@ -253,40 +253,66 @@ Items #2–#4 are substantive economic changes that affect simulation outcomes, 
 
 </details>
 
-### D9: Uniswap V3 swap loop fee bypass ⚠️ breaking §4.3 slippage figures
+### D9: Post-Primer swap formula change ⚠️ breaking §4.3 slippage figures
 
-**Location:** `uniswap_v3_math.py:1282`
+**Root cause of the ~430× slippage discrepancy**, confirmed by git history.
+<details>
+<summary><em>Git history: origin of Bug</em></summary>
 
-**Bug:** The swap loop subtracts only `amount_in` from `amount_specified_remaining`, omitting `fee_amount`. The Uniswap V3 reference implementation (Solidity) subtracts `amountIn + feeAmount`:
+**Commit:** [`48a9ff2` (2025-09-29)](https://github.com/onflow/tidal-protocol-research/commit/48a9ff2), `ibcflan`, message: "updates"
+
+This commit replaced the standard Uniswap V3 integer output formula with a floating-point "economic" formula for YT→MOET swaps in `compute_swap_step`:
+
+```diff
+-  amount_out = get_amount0_delta(
+-      sqrt_price_current_x96, sqrt_price_next_x96, liquidity, False
+-  )
++  # CRITICAL FIX: Use economic formula instead of broken Uniswap V3 formula
++  # This fixes the 5.66% efficiency loss
++  if exact_in and amount_remaining_less_fee > 0:
++      amount_out = get_amount0_delta_economic(
++          sqrt_price_current_x96, sqrt_price_next_x96, liquidity, amount_remaining_less_fee
++      )
+```
+
+
+
+**Timeline:** `hourly_test_with_rebalancer.py` was added in `684c007` (2025-09-25). The Primer's §4.3 slippage figures (\$2.14 mean) were generated in the 4-day window before `48a9ff2` (2025-09-29), using the **original** `get_amount0_delta` formula.
+
+</details></br>
+
+**Mechanism:** The original `get_amount0_delta` computes output via two-step Q96 integer division: `(L << 96) × (√P_next − √P_current) / √P_next // √P_current`. For highly concentrated stablecoin positions where both sqrt prices are near `Q96 ≈ 7.9×10²⁸`, the floor division in the second step truncates ~0.25% of the output. The replacement `get_amount0_delta_economic` uses floating-point arithmetic (`Δx = Δy / (1 + Δy/(L·√P))`) which avoids this truncation, producing near-1:1 output.
+
+**Quantitative impact (per ~\$842 trade on \$500k pool, 0.05% fee tier):**
+
+| Formula | Output per swap | Slippage | Source |
+|---------|----------------|----------|--------|
+| `get_amount0_delta` (original, Q96 integer) | ~\$840 | ~\$2.14 | Primer values |
+| `get_amount0_delta_economic` (current, float) | ~\$841.99 | ~\$0.005 | Current sim output |
+
+**Reproducing Primer Figures:** Revert the `compute_swap_step` change from `48a9ff2` — replace `get_amount0_delta_economic` with `get_amount0_delta` for the `not zero_for_one` output path. This restores the Primer's slippage behavior.
+
+**Note on the "5.66% efficiency loss" claim** ([uniswap_v3_math.py:335](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/e72d802ff8e45ef623fe8f2da8bc958f85613354/tidal_protocol_sim/core/uniswap_v3_math.py#L335-L337); claim unsubstantiated by author): The commit comment overstates the effect [AI conclusion from 'Mechanism' discussion above]. For the §4.3 pool parameters (\$500k, 95% concentration, 0.05% fee), the actual integer truncation loss is ~0.25%, not 5.66%. The 5.66% figure likely came from a different test case (e.g., smaller pool, larger trades, or different concentration).
+
+---
+## Discovered bugs and edge-case already contained in Primer sims
+
+### B3: Uniswap V3 swap loop fee bypass (pre-existing bug already contained in Primer sims)
+
+**Location:** [`uniswap_v3_math.py:1282`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/e72d802ff8e45ef623fe8f2da8bc958f85613354/tidal_protocol_sim/core/uniswap_v3_math.py#L1282-L1281)
+
+**Bug:** The swap loop subtracts only `amount_in` from `amount_specified_remaining`, omitting `fee_amount`. The Uniswap V3 Solidity reference subtracts `amountIn + feeAmount`:
 
 ```diff
 - state['amount_specified_remaining'] -= amount_in  # Fee already deducted in compute_swap_step
 + state['amount_specified_remaining'] -= (amount_in + fee_amount)  # Uniswap V3 ref: amountIn + feeAmount
 ```
 
-**Mechanism:** After each swap step, the un-deducted fee remains as "unswapped" amount, causing the loop to re-swap it (minus a fee on the fee), creating a convergent geometric series:
+**Pre-existing:** This bug was present since the swap function was first written (verified at `684c007` and all prior commits). The Primer figures were generated WITH this bug active.
 
-| Iteration | Remaining | Net input | Output (L≫trade) |
-|-----------|-----------|-----------|-------------------|
-| 1 | $842.000 | $841.579 | ≈$841.579 |
-| 2 | $0.421 | $0.421 | ≈$0.421 |
-| 3 | $0.0002 | <tol | exit |
-| **Total** | | | **≈$842.00** |
+**Interaction with D9:** The fee bypass causes each swap step's un-deducted fee to be re-swapped in subsequent iterations (geometric series converging in 2–3 iterations). With the original `get_amount0_delta`, each re-swapped fee amount also suffers the ~0.25% integer truncation, so the net effect is small (~\$0.001 additional slippage). With the current `get_amount0_delta_economic`, the re-swapped fee converts at near-1:1, amplifying the near-zero slippage effect. In either case, the 0.05% swap fee is not properly retained by the pool.
 
-Each iteration swaps the prior iteration's fee. With `fee_rate = 0.0005`, convergence is rapid (`r³ ≈ 1.25×10⁻¹⁰`), yielding near-100% output efficiency. The 0.05% fee is effectively bypassed.
-
-**Quantitative impact:**
-- Expected slippage (fee + impact): `$842 × 0.0005 + price_impact ≈ $0.42 + $1.72 ≈ $2.14`
-- Actual slippage (fee bypassed): residual price impact only ≈ $0.005
-- Ratio: **~430×** under-reported slippage
-
-**Affected figures:** "Agent Rebalancing Analysis" slippage panels (top row of 2×2). Rebalance amount panels (bottom row) are unaffected since they track MOET raised, not slippage.
-
-**Implication for Primer:** The Primer's \$2.09/\$2.143 slippage values are **correct** (consistent with 0.05% fee + concentrated liquidity price impact on ~\$800 trades). The current codebase produces \$0.005, meaning the Primer figures were generated before this bug was introduced or with different swap code.
-
-**Secondary effects:**
-- Pool MOET reserves drain ~0.05% faster per swap than they should (accumulated fee leakage)
-- `cost_of_rebalancing` metric at `high_tide_vault_engine.py:995` sums over tripled events (see B4), compounding the error: 3× event count × wrong per-event slippage
+**Impact:** Fees not properly charged; pool MOET reserves drain ~0.05% faster per swap than intended. Fix independently of D9.
 
 ### B4: Triple-recording of rebalancing events in engine
 
@@ -294,11 +320,11 @@ Each agent rebalancing appends **3 entries** to `engine.rebalancing_events`:
 
 | # | Location | Cause |
 |---|----------|-------|
-| 1 | `high_tide_vault_engine.py:536` | First append in `_execute_yield_token_sale` |
-| 2 | `high_tide_vault_engine.py:562` | Second append in same function (duplicate) |
-| 3 | `high_tide_vault_engine.py:628` | `record_agent_rebalancing_event`, called from `high_tide_agent.py:354` |
+| 1 | [`high_tide_vault_engine.py:536`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L536) | First append in `_execute_yield_token_sale` |
+| 2 | [`high_tide_vault_engine.py:562`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L562-L561) | Second append in same function (duplicate) |
+| 3 | [`high_tide_vault_engine.py:628`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L628) | `record_agent_rebalancing_event`, called from `high_tide_agent.py:354` |
 
-**Impact on charts:** The chart function `_create_agent_slippage_analysis_chart` (line 1411) reads `simulation_results["rebalancing_events"]` which is `engine.rebalancing_events` (line 1098). Per-event statistics (mean, median, max) are unaffected (all 3 copies carry identical values), but histogram frequencies and event counts are 3× inflated. The `cost_of_rebalancing` per agent (`engine.py:995`) sums slippage across all 3 copies, tripling the reported cost.
+**Impact on charts:** The chart function [`_create_agent_slippage_analysis_chart` (line 1411)](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/a626658d4adf9ad21bcf1c96391164a80bfee9a6/sim_tests/hourly_test_with_rebalancer.py#L1406) reads `simulation_results["rebalancing_events"]` which is [`engine.rebalancing_events` (line 1098)](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L1098-L1097). Per-event statistics (mean, median, max) are unaffected (all 3 copies carry identical values), but histogram frequencies and event counts are 3× inflated. The `cost_of_rebalancing` per agent ([`high_tide_vault_engine.py:995`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L994-L996)) sums slippage across all 3 copies, tripling the reported cost.
 
 
 ---
@@ -311,7 +337,7 @@ Each agent rebalancing appends **3 entries** to `engine.rebalancing_events`:
 | "Figure 5: Time Series Evolution" | `comprehensive_ht_vs_aave_analysis.py` | **High** | BTC price (\$76,342) + scenario names confirm source; import fix needed (D6) |
 | "Pool Price Evolution (top panel)" | `hourly_test_with_rebalancer.py` | **Very High** | 10/10 parameter match; visual match |
 | "Pool Price Evolution (bottom panel)" | `hourly_test_with_rebalancer.py` | **Very High** | Same output file |
-| "Agent Rebalancing Analysis" | `hourly_test_with_rebalancer.py` | **Low** | Slippage panels: sim produces \$0.005 vs Primer's \$2.14 (~430× off) due to D9 fee bypass; rebalance amount panels match within 6%. Source script confirmed but slippage values non-reproducible. |
+| "Agent Rebalancing Analysis" | `hourly_test_with_rebalancer.py` | **High** (source attribution) / **Low** (reproducibility) | Source script, chart function, and layout confirmed. Slippage ~430× off due to post-Primer swap formula change (D9, commit `48a9ff2`). Rebalance amounts match within 6%. Reproducible by reverting D9. |
 | "BTC Price Decline Over Time" | `hourly_test_with_rebalancer.py` | **Very High** | Linear \$100k→\$50k exactly matches config |
 | "Agent Health Factor Evolution" | `hourly_test_with_rebalancer.py` | **Low** | Threshold lines match but sawtooth absent; only 2 data points due to D8 |
 | "Yield Token Holdings Over Time" | `hourly_test_with_rebalancer.py` | **Low** | Linear instead of staircase; same D8 root cause |
@@ -322,5 +348,5 @@ Each agent rebalancing appends **3 entries** to `engine.rebalancing_events`:
 |--------|-----------|----------------------|-------------------------------|-------|
 | `balanced_scenario_monte_carlo.py` | Yes (after import fix) | **No** — BTC price silently changed (D7) | **No** — 100/100% survival, ~$0 costs (expected: 100% vs 64%, $22 vs $32k) | Revert line 201 to `76_342.50` (restoring the configuration prior to breaking commit [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26)) |
 | `comprehensive_ht_vs_aave_analysis.py` | **No** — dead import (D6) | Yes | Not yet tested | Needs same import fix as `balanced_scenario_monte_carlo.py` |
-| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | **Partial** — missing `agent_snapshot_frequency_minutes` (D8); fee bypass (D9) | **Partial** — 2/6 panels match (BTC, pool price); 1/6 partially matches (rebalance amounts OK, slippage ~430× off due to D9); 3/6 fail (HF, YT, net position due to D8) | Need D8 fix + D9 fix (`uniswap_v3_math.py:1282`) |
+| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | **Partial** — missing `agent_snapshot_frequency_minutes` (D8); post-Primer swap formula (D9) | **Partial** — 2/6 panels match (BTC, pool price); 1/6 partially matches (rebalance amounts OK, slippage ~430× off due to D9); 3/6 fail (HF, YT, net position due to D8) | Need D8 fix + D9 revert (`48a9ff2` swap formula in `compute_swap_step`). Pre-existing bugs B3 (fee bypass) and B4 (triple-recording) should be fixed separately. |
 

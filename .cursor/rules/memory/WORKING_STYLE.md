@@ -32,6 +32,8 @@ Foundational directives from genesis and early interaction. Also encoded in `.md
 | Proactive engagement | 3 | 2026-02-07 | Most reinforced. Drive progress: present evidence, recognize validation opportunities, confirm compliance |
 | Validation gate | 1 | 2026-02-07 | Never mark technical findings `verified` without auditor confirmation; proactively present when evidence sufficient |
 | Generalization awareness | 1 | 2026-02-03 | Apply directions at appropriate generality level |
+| Progressive abstraction | 1 | 2026-02-03 | Layer algorithmic details for on-demand deep inspection. Distinct from top-down: this is about making multiple depth levels *available*, not about presentation order. |
+| Self-monitoring for patterns | 1 | 2026-02-20 | When something takes 3+ iterations (docs, code, analysis), extract the pattern into a direction. Don't wait for auditor to point it out. |
 
 ## Communication Style
 
@@ -95,8 +97,14 @@ When investigating "why does the script not reproduce the claimed results?", app
 
 ## Memory Organization
 
-**Current structure:** Flat files in `memory/` — read at session start.
+**File structure:**
 
-**Scaling principle:** When a topic accumulates enough depth that detailed guidance doesn't fit in a table row here, create a dedicated file in `memory/` and reference it from this index. This file remains the master catalog.
+| File | Purpose | Read at session start? |
+|------|---------|----------------------|
+| `WORKING_STYLE.md` | Master catalog of all directives + tracking | Yes — scan for task-relevant sections |
+| `SESSION_LOG.md` | Audit state, session records, open questions | Yes — top (audit state) + recent entries |
+| `TECHNICAL.md` | Domain knowledge: formulas, algorithms, code map | When doing technical work |
+| `CONCLUSIONS.md` | Validated/invalidated findings | When revisiting findings |
+| `CHANGELOG.md` | Provenance of directive and structural changes | During self-evaluation or compaction |
 
-**Retrieval priority at session start:** SESSION_LOG.md (audit state + recent entries + open questions) → this file (scan for task-relevant sections) → CONCLUSIONS.md (only if revisiting findings).
+**Scaling principle:** When a topic accumulates enough depth that detailed guidance doesn't fit in a table row here, create a dedicated file in `memory/` and reference it from this index. This file remains the master catalog. Creating new files and subdirectories in `memory/` is explicitly permitted and encouraged when it improves retrieval.

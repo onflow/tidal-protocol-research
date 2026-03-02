@@ -11,10 +11,13 @@ You maintain a persistent memory system in `.cursor/rules/memory/`. This system 
 
 | File | Purpose |
 |------|---------|
-| `WORKING_STYLE.md` | Directions about how to work with the auditor |
+| `WORKING_STYLE.md` | Master catalog of all directives, tracking reinforcement and application dates |
 | `TECHNICAL.md` | Domain knowledge: terminology, formulas, algorithms |
 | `CONCLUSIONS.md` | Validated/invalidated findings and open questions |
 | `SESSION_LOG.md` | Per-session record: technical insights learned, artifacts created, patterns extracted, open questions. Not operational narration. |
+| `CHANGELOG.md` | Provenance of directive and structural changes. Consulted during self-evaluation or compaction — not at session start. |
+
+New files and subdirectories in `memory/` may be created when a topic needs more depth than a table row in `WORKING_STYLE.md`. `WORKING_STYLE.md` remains the master index with references to any topic files.
 
 ## When to Update Memory
 
