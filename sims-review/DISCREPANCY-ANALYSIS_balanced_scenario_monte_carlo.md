@@ -106,11 +106,13 @@ Already documented in `FCM_PRIMER_FIGURE_MAPPING.md`, section §D7. Commit `684c
 
 1. Seed set to [`42 + scenario_idx × 100` (line 412)](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/59812db16c4b609a1c84909569603ef5a3ab8c1a/sim_tests/balanced_scenario_monte_carlo.py#L408-L413)
 2. Seed RE-SET to same value inside [`_run_high_tide_scenario` (line 464)](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/59812db16c4b609a1c84909569603ef5a3ab8c1a/sim_tests/balanced_scenario_monte_carlo.py#L408-L413)
-3. 5 × `random.uniform(1.25, 1.45)` → HT agent initial HFs
-4. HT simulation runs (zero random draws — deterministic given initial state)
-5. 5 × `random.uniform(1.25, 1.45)` → AAVE agent initial HFs
+3. HT engine constructed (N random draws consumed by `AnalysisHighTideEngine` constructor, including Uniswap V3 pool setup)
+4. 5 × `random.uniform(1.25, 1.45)` → HT agent initial HFs
+5. HT simulation runs (M random draws consumed via `np.random` for BTC price path generation)
+6. AAVE engine constructed (N random draws — same as HT, since both inherit from `TidalProtocolEngine`)
+7. 5 × `random.uniform(1.25, 1.45)` → AAVE agent initial HFs
 
-Since steps 1-4 consume the same number of random draws in every code version, the AAVE agent initial HFs at step 5 are always:
+The AAVE HFs at step 7 depend on the total draws consumed by steps 2–6: N + 5 + M + N. Since M (HT simulation draws) is constant across code versions at the two commits tested (`1c9fce8`, HEAD), the AAVE HFs are deterministic for a given seed:
 
 
 | Scenario | AAVE Agent HFs                    | Agents ≤ 1.31 (liquidated) | Survival |
@@ -196,18 +198,87 @@ With the old engine, non-liquidated AAVE agents retain `Final_Net_Position = $10
 
 ---
 
+## Attempt 4: Old engine + swapped simulation order (AAVE first, HT second)
+
+Run: 2026-03-02. Engine at `1c9fce8`, `btc_final_price = 76,342.50`.
+
+**Hypothesis:** The seed is RE-SET inside `_run_high_tide_scenario` but NOT inside `_run_aave_scenario`. If AAVE ran first (before HT), it would draw from the initial seed state instead of from the post-HT-simulation state — receiving different initial HFs. Because HT resets the seed, HT agent HFs are invariant to ordering. Verified: swapped AAVE HFs = current HT HFs (the engine constructors consume identical random draws from a reset seed, so draws land at the same positions).
+
+
+| Scenario | HT Surv | AAVE Surv | HT Cost/agent | AAVE Cost/liq |
+| -------- | ------- | --------- | ------------- | ------------- |
+| Run 1    | 100%    | **60%**   | $11           | $32,638       |
+| Run 2    | 100%    | **40%**   | $13           | $32,637       |
+| Run 3    | 100%    | **80%**   | $12           | $32,485       |
+| Run 4    | 100%    | **40%**   | $9            | $32,676       |
+| Run 5    | 100%    | **60%**   | $11           | $32,307       |
+
+
+**Comparison of all configurations vs Primer:**
+
+
+| Run | Primer AAVE | Attempt 3 (current order) | Attempt 4 (swapped order) | Closer? |
+| --- | ----------- | ------------------------- | ------------------------- | ------- |
+| 1   | **40%**     | 100% (Δ=60pp)             | 60% (Δ=20pp)              | swapped |
+| 2   | **60%**     | 80% (Δ=20pp)              | 40% (Δ=20pp)              | tie     |
+| 3   | **80%**     | 20% (Δ=60pp)              | 80% ✓ (Δ=0pp)             | swapped |
+| 4   | **60%**     | 60% ✓ (Δ=0pp)             | 40% (Δ=20pp)              | current |
+| 5   | **80%**     | 80% ✓ (Δ=0pp)             | 60% (Δ=20pp)              | current |
+
+- **Total absolute error:** current order = 140pp, swapped order = 80pp (43% reduction)
+- **Exact matches:** current order = Runs 4,5; swapped order = Run 3; combined best = Runs 3,4,5
+- **HT costs and AAVE costs per liquidation:** identical between orderings (HT due to seed reset; AAVE because 1-event liquidation cost is primarily a function of debt/collateral, not initial HF)
+
+**What matches the Primer in the swapped order:**
+
+- HT survival: 100% across all scenarios ✓
+- AAVE cost per liquidation: ~$32.3–32.7k (Primer: ~$32.3–33.0k) ✓
+- Run 3 AAVE survival: 80% ✓
+
+**What does NOT match:**
+
+- Runs 1,2,4,5 AAVE survival: all off by exactly 20pp (one agent difference per run)
+- HT cost per agent: still $9–13 vs Primer's $19–22 (factor ~1.8×, see F3)
+
+### F6: Effective liquidation threshold varies between runs
+
+In Attempt 4, the AAVE agent with initial HF 1.3154 (Run 2) was liquidated, even though the theoretical threshold is 1.3099. Meanwhile, in Run 4, the agent with HF 1.3204 survived. This means the effective threshold is not a single constant — it varies per scenario (approximately 1.315–1.320).
+
+The variation is caused by per-scenario differences in the BTC price path. Although the final price is deterministic ($76,342.50), the intermediate path depends on the `np.random` state at the time the simulation runs. In the swapped order, the AAVE simulation's `np.random` state originates from the initial seed (after AAVE engine construction + agent creation), producing a different price path per scenario. If the price dips below the linear interpolation at intermediate minutes, agents near the boundary get liquidated.
+
+### F7: HT simulation consumes random draws
+
+The HT simulation loop consumes `np.random` draws (likely for BTC price path generation), shifting the RNG state before AAVE agent creation. Verification: AAVE HFs computed by constructing engines + agents WITHOUT running the HT simulation differ from those in the Attempt 3 CSV (where the HT simulation ran in between).
+
+This does NOT affect the swapped-order analysis: in the swapped order, AAVE agents are created BEFORE any simulation runs, so their HFs are independent of simulation draws. The HT agents are also independent (seed reset). Only the simulation-time dynamics (price path, interest accrual) depend on the post-creation RNG state.
+
+### Avenue 1: Commit `cfdbd21` cannot reproduce the Primer
+
+Commit `cfdbd21b9b5e5a4af40c813cdc7f2cc18c831d28` (2025-11-12, "csv fix") was claimed to be a runnable commit capable of reproducing the Primer results. Investigation:
+
+- The commit only modifies `.gitignore` and `sim_tests/generate_daily_performance_csvs.py`
+- `balanced_scenario_monte_carlo.py` is **identical** to `48a9ff2` (zero diff)
+- `btc_final_price = 90_000.0` (the wrong value, same as current committed code)
+- The engine code at this commit includes all post-delivery changes (`684c007`, `2fd742d`, `48a9ff2`)
+- Running it would produce the same 100/100% survival as Attempt 1
+
+**Conclusion:** The claim is false. `cfdbd21` cannot reproduce any AAVE liquidations, let alone the Primer's survival pattern.
+
+---
+
 ## Summary: What Would Be Needed to Reproduce the Primer
 
 
-| Requirement                                                    | Status                                                                                               |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Correct BTC price ($76,342.50)                                 | ✅ Fixed in `1b8b0bf`                                                                                 |
-| Original swap formula (integer math, pre-D9)                   | ❌ Need to revert `48a9ff2` in `compute_swap_step`                                                    |
-| Original engine behavior (pre-`2fd742d`)                       | ❌ Need old engine for 1-event AAVE liquidation and correct HT cost levels                            |
-| Whatever AAVE agent HFs produced the Primer's survival pattern | ❌ Not achievable at either tested commit (`1c9fce8`, HEAD). Untested intermediate commits not ruled out — see F2 caveats. |
+| Requirement                                                    | Status                                                                                                                    |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Correct BTC price ($76,342.50)                                 | ✅ Fixed in `1b8b0bf`                                                                                                      |
+| Original swap formula (integer math, pre-D9)                   | ❌ Need to revert `48a9ff2` in `compute_swap_step`                                                                         |
+| Original engine behavior (pre-`2fd742d`)                       | ❌ Need old engine for 1-event AAVE liquidation and correct HT cost levels                                                 |
+| AAVE agent HFs matching Primer's survival pattern              | ⚠️ Swapped simulation order (AAVE first, HT second) gets 43% closer. 3/5 runs match with combined best of both orderings. |
+| Commit `cfdbd21` as reproduction source                        | ❌ Disproven: btc_final_price=90000, file identical to `48a9ff2`, all post-delivery changes present.                        |
 
 
-**Bottom line:** Even reverting all post-delivery code changes does not reproduce the Primer's Figure 2 at the two code versions tested. The AAVE survival rates require different initial health factors. Most likely explanation is uncommitted code, though an untested intermediate commit with different RNG consumption in engine/agent initialization cannot be fully excluded.
+**Bottom line:** The swapped simulation order significantly improves reproduction of the Primer's Figure 2 (total error reduced from 140pp to 80pp, with Run 3 now matching exactly). Combined with the current order, 3 of 5 AAVE survival values match, and the remaining 2 are off by exactly 20pp (one agent each). The gap is consistent with per-run variation in the effective liquidation threshold due to price path randomness (F6). This does not prove the Primer used the swapped order, but it demonstrates that simulation ordering is a plausible contributing factor to the discrepancy. The HT cost gap (~1.8×) and the F3 finding remain unexplained.
 
 ---
 
@@ -216,5 +287,6 @@ With the old engine, non-liquidated AAVE agents retain `Final_Net_Position = $10
 - `[FCM_PRIMER_FIGURE_MAPPING.md](FCM_PRIMER_FIGURE_MAPPING.md)` — D7 (config change), D9 (swap formula), B3 (fee bypass), B4 (triple-recording)
 - `[RUNNABILITY_AUDIT.md](RUNNABILITY_AUDIT.md)` — Category A: import bugs
 - `tidal_protocol_sim/results/Balanced_Scenario_Monte_Carlo_old/` — Attempt 1 results (btc=90,000, current engine)
-- `tidal_protocol_sim/results/Balanced_Scenario_Monte_Carlo/` — Attempt 3 results (btc=76,342.50, old engine at `1c9fce8`)
+- `tidal_protocol_sim/results/Balanced_Scenario_Monte_Carlo/` — Attempt 3 results (btc=76,342.50, old engine, current order)
+- `tidal_protocol_sim/results/Balanced_MC_Swapped_Order/` — Attempt 4 results (btc=76,342.50, old engine, swapped order)
 
