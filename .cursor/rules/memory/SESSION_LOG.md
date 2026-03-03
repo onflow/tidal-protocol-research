@@ -209,3 +209,4 @@ Claimed to be a "runnable commit" that could reproduce Primer results. Disproven
 | F1 | Algo rebalancer $0 profit on $3.6M volume — accounting bug or design? | 2026-02-27 | `POOL_REBALANCER_36H_COMPARISON.md` |
 | F2 | off-by-one in `range(2160)` — 3rd ALM trigger never fires | 2026-02-27 | `POOL_REBALANCER_36H_COMPARISON.md` |
 | B2 | Flash crash infinite leverage loop — `moet_debt` reset root cause | 2026-02-20 | `FLASH_CRASH_SIMULATION_SUMMARY.md` |
+| F3 | HT cost ~1.8× lower than Primer at every tested commit | 2026-03-02 | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` |
