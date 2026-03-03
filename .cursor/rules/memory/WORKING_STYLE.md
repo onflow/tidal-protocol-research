@@ -67,6 +67,12 @@ For discrepancy analysis, I track two kinds of findings:
 | Comment handling | 1 | 2026-02-20 | Never silently remove comments. Update if still relevant. Ask before removing obsolete blocks. |
 | Minimal invasiveness | 1 | 2026-02-05 | Avoid modifying simulation code; prefer wrappers, orchestration layers, smarter terminal calls |
 
+## Git Hygiene
+
+| Direction | Reinforcements | Last Applied | Notes |
+|-----------|----------------|--------------|-------|
+| Clean up checkout artifacts | 1 | 2026-03-02 | After `git checkout <commit> -- <path>` and restoring HEAD, verify no leftover files. `git status --short` immediately after restore. For each suspect file: (1) confirm absent at HEAD, (2) confirm present at old commit, (3) **diff on-disk content against old commit version** — only delete if identical. If the file has local modifications not in any commit, do NOT delete. |
+
 ## Simulation Execution (bash on macOS)
 
 | Direction | Reinforcements | Last Applied | Notes |
@@ -76,6 +82,14 @@ For discrepancy analysis, I track two kinds of findings:
 | Unbuffered + filtered output | 1 | 2026-02-27 | `PYTHONUNBUFFERED=1`; `grep --line-buffered -v "DEBUG"` |
 | Timestamped descriptive logs | 1 | 2026-02-27 | `tee` to `results/<variant>_$(date +%Y%m%d_%H%M%S).log` |
 | Virtual environment | 4 | 2026-02-27 | Venv: `/Users/alex/Development/PythonVEs/FlowCreditMarkets`; cwd: repo root. Don't include venv activation or cd in proposed commands. `tidal_protocol_sim` not editable install — always `PYTHONPATH=.` |
+
+## Exhaustive Claims Require Exhaustive Verification
+
+| Direction | Reinforcements | Last Applied | Notes |
+|-----------|----------------|--------------|-------|
+| Verify universal claims mechanically | 1 | 2026-03-02 | Claims like "X never happens," "zero random draws," or "always the case that..." are exhaustive-coverage claims. Verify them with exhaustive tools (grep, AST search) before presenting. Reasoning alone is insufficient — it's the wrong tool for the job. The auditor cannot tractably verify these; they rely on me to have actually done the exhaustive search. |
+
+**Failure pattern to avoid:** Arriving at an exhaustive claim via high-level reasoning ("the simulation is deterministic, so probably no random draws") without actually verifying exhaustively. This is backwards — use the mechanical tool first, then state the fact.
 
 ## Simulation Reproduction Debugging
 

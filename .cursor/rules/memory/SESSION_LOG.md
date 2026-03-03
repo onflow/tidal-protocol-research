@@ -10,7 +10,7 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 - All 8 Primer §4 figures mapped to source scripts → `FCM_PRIMER_FIGURE_MAPPING.md`
 - All sim scripts catalogued by runnability → `RUNNABILITY_AUDIT.md`
 - `hourly_test_with_rebalancer.py` executed (modes 1 + 3), partial reproduction (2/6 panels match, 1/6 partial, 3/6 fail)
-- `balanced_scenario_monte_carlo.py`: **3 reproduction attempts** (current code, current engine+fixed config, old engine+fixed config). AAVE survival rates NOT reproducible from any committed code. AAVE cost per liquidation matches Primer at old engine. HT costs ~1.8× lower than Primer. → `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`
+- `balanced_scenario_monte_carlo.py`: **4 reproduction attempts** (current code, current engine+fixed config, old engine+fixed config, old engine+swapped order). Swapped order reduces AAVE survival error 43% (3/5 runs match combined). Commit `cfdbd21` disproven as reproduction source. HT costs ~1.8× gap and 2/5 AAVE survival runs remain unexplained. → `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`
 - Flash crash simulation analyzed (not executed to completion — B2 leverage loop blocks)
 - Core formulas verified: Health Factor, Debt Reduction, Rebalancing algorithm
 - **Slippage discrepancy root-caused (D9)** — post-Primer swap formula change (`48a9ff2`) + pre-existing fee bypass (B3) + triple-recording (B4)
@@ -21,6 +21,7 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 - Revert D9 (`48a9ff2` swap formula in `compute_swap_step`) and re-run to verify slippage matches Primer's ~$2
 - Fix D8 (snapshot frequency + chart x-axis) and re-run for full §4.3 reproduction
 - Fix `comprehensive_ht_vs_aave_analysis.py` import and test Figure 5
+- Investigate F3 (HT cost 1.8× gap) — possibly related to B4 triple-recording interaction or different pool parameters
 - Resolve open questions F1 (algo profit), F2 (ALM off-by-one), B2 (leverage loop)
 
 ---
@@ -179,7 +180,25 @@ Three reproduction attempts: (1) current code as committed, (2) current engine +
 - F4 (new): Post-`2fd742d` engine triggers 3 liquidation events per AAVE agent (vs 1 in old engine), inflating AAVE costs from ~$32k to ~$77k per agent
 - AAVE cost per liquidation with old engine (~$32-33k) matches Primer ✓
 
-**Technical insight — RNG determinism:** AAVE agent HFs are determined solely by the seed (42 + scenario_idx × 100) and the constant number of `random.uniform` draws (5 for HT agents, then 5 for AAVE agents). The HT simulation adds zero random draws. Engine code changes (2fd742d, 48a9ff2, etc.) don't affect the RNG state when AAVE agents are created.
+**Technical insight — RNG determinism:** AAVE agent HFs are determined by the seed and the total random draws consumed before AAVE agent creation: HT engine construction (N draws) + 5 HT agent draws + HT simulation (M draws via `np.random`) + AAVE engine construction (N draws). N is identical across old/HEAD engine versions; M appears constant across the two tested versions. The `_run_high_tide_scenario` resets the seed, making HT agent HFs invariant to call ordering. The `_run_aave_scenario` does NOT reset the seed, making AAVE HFs sensitive to what ran before.
+
+---
+
+## 2026-03-02b: §4.2 Reproduction — Swapped Order Experiment + `cfdbd21` Investigation
+
+Two avenues tested to get closer to Primer Figure 2.
+→ `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` (Attempt 4 + Avenue 1)
+
+**Avenue 1 — Commit `cfdbd21`:**
+Claimed to be a "runnable commit" that could reproduce Primer results. Disproven: `btc_final_price = 90_000.0` (wrong), `balanced_scenario_monte_carlo.py` identical to `48a9ff2`, all post-delivery changes present. Cannot produce any AAVE liquidations.
+
+**Avenue 2 — Swapped simulation order (Attempt 4):**
+- F6 (new): **Swapped order reduces AAVE survival total error from 140pp to 80pp (43% improvement).** Run 3 matches exactly (80%). Combined best of both orderings: 3/5 runs match (Runs 3,4,5). Remaining 2 runs off by exactly 20pp (one agent each).
+- F7 (new): **HT simulation consumes random draws** (`np.random`, for BTC price path). Verified by comparing AAVE HFs from engine-only construction vs full simulation run. Does not affect swapped-order analysis since AAVE agents are created before any simulation.
+- Confirmed: swapped AAVE HFs = HT HFs (engine constructors consume identical random draws). Holds at both `1c9fce8` and HEAD.
+- Per-run effective liquidation threshold varies (~1.315–1.320 vs theoretical 1.3099), likely due to BTC price path randomness via `np.random` (F6).
+- HT costs and AAVE costs per liquidation are unchanged by ordering (HT: seed reset; AAVE: cost is f(debt/collateral)).
+- F3 (HT cost 1.8× gap) remains unexplained.
 
 ---
 

@@ -1,6 +1,6 @@
 # Audit Conclusions
 
-Last updated: 2026-03-02
+Last updated: 2026-03-02b
 
 ## Validated (auditor confirmed)
 
@@ -16,13 +16,18 @@ Health Factor, Debt Reduction, and High Tide Rebalancing algorithm verified agai
 
 ### §4.2 AAVE survival rates not reproducible at tested code versions (2026-03-02)
 
-AAVE agent initial HFs are deterministic (seed + 10 `random.uniform` calls; HT simulation adds zero random draws). HFs identical at both tested versions (`1c9fce8` and HEAD). Survival pattern at these HFs is (100%, 80%, 20%, 60%, 80%), not Primer's (40%, 60%, 80%, 60%, 80%) — only Runs 4,5 match. The contradictory-threshold argument (no single T satisfies Run 1 and Run 2 simultaneously) holds if the AAVE simulation is deterministic, which code inspection supports but is not exhaustively verified. Untested intermediate commits not fully ruled out. Most likely explanation: uncommitted code.
+AAVE agent initial HFs are deterministic for a given simulation ordering (seed → N engine construction draws → 5 agent draws → M simulation draws → N engine draws → 5 agent draws). HFs identical at both tested versions (`1c9fce8` and HEAD) in current ordering. Survival pattern at these HFs is (100%, 80%, 20%, 60%, 80%), not Primer's (40%, 60%, 80%, 60%, 80%) — only Runs 4,5 match. Untested intermediate commits not fully ruled out. Most likely explanation: uncommitted code or different simulation ordering.
 → `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` §F2
 
 ### Post-`2fd742d` multiple AAVE liquidation events (2026-03-02)
 
 Current engine (post-`2fd742d`) triggers 3 liquidation events per AAVE agent instead of 1 (old engine at `1c9fce8`). Inflates AAVE cost per agent from ~$32k to ~$77k. Root cause: behavioral changes in `2fd742d` (MOET init, leverage throttling, balance deduction).
 → `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` §F4
+
+### Swapped simulation order reduces AAVE survival error 43% (2026-03-02b)
+
+Running AAVE first (before HT) in `_run_scenario_comparison` changes the AAVE agent initial HFs. The swapped AAVE HFs equal the current HT HFs (both engine constructors consume identical random draws from a reset seed). Total AAVE survival error drops from 140pp to 80pp. Combined with current ordering, 3/5 runs match Primer (Runs 3,4,5). Remaining 2 runs off by exactly 20pp each.
+→ `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` §Attempt 4
 
 ## Evidence-Supported (strong code evidence, not yet presented for auditor confirmation)
 
@@ -61,6 +66,16 @@ Each rebalancing appends 3× to `engine.rebalancing_events` (engine lines 536, 5
 HF formula uses 0.85 but rebalancing debt target uses 0.80. Effect: AAVE targets more conservative debt when deleveraging than its HF implies.
 → `TECHNICAL.md` §Assumptions
 
+### Commit `cfdbd21` cannot reproduce Primer (2026-03-02b)
+
+`cfdbd21` (2025-11-12, "csv fix") has `btc_final_price = 90_000.0` and `balanced_scenario_monte_carlo.py` identical to `48a9ff2`. All post-delivery changes present. Cannot produce any AAVE liquidations.
+→ `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` §Avenue 1
+
+### HT simulation consumes random draws (2026-03-02b)
+
+The HT simulation loop consumes `np.random` draws (for BTC price path generation), shifting the RNG state before AAVE agent creation. Causes per-run effective liquidation threshold to vary (~1.315–1.320 vs theoretical 1.3099).
+→ `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` §F7
+
 ## Invalidated
 
 ### MOET $1 USD Peg (2026-02-03)
@@ -77,6 +92,7 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Summary:
 | F1 | Algo rebalancer $0 profit on $3.6M volume | Medium |
 | F2 | off-by-one in `range(2160)` — 3rd ALM trigger | Low |
 | B2 | Flash crash infinite leverage loop | Medium |
+| F3 | HT cost ~1.8× lower than Primer at every tested commit | Medium |
 
 ## Conclusion Change Log
 
@@ -94,3 +110,6 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Summary:
 | 2026-02-28 | B4 triple-recording (pre-existing) | Evidence-supported | Code trace (3 append sites at `684c007`) |
 | 2026-03-02 | §4.2 AAVE survival non-reproducible | Validated | 3 reproduction attempts, RNG determinism proof, auditor review |
 | 2026-03-02 | Post-`2fd742d` multiple AAVE liquidations | Validated | CSV comparison (1 vs 3 events, $32k vs $77k), auditor review |
+| 2026-03-02b | Swapped order reduces AAVE error 43% | Validated | Attempt 4 run, RNG mechanism verified at both engine versions, auditor confirmed |
+| 2026-03-02b | Commit `cfdbd21` cannot reproduce Primer | Evidence-supported | File identity check, btc_final_price verification |
+| 2026-03-02b | HT simulation consumes random draws | Evidence-supported | Engine-only vs full-sim AAVE HF comparison |
