@@ -1,6 +1,6 @@
 # Audit Conclusions
 
-Last updated: 2026-02-28
+Last updated: 2026-03-02
 
 ## Validated (auditor confirmed)
 
@@ -13,6 +13,16 @@ Last updated: 2026-02-28
 
 Health Factor, Debt Reduction, and High Tide Rebalancing algorithm verified against code.
 → `TECHNICAL.md` (verified entries)
+
+### §4.2 AAVE survival rates not reproducible at tested code versions (2026-03-02)
+
+AAVE agent initial HFs are deterministic (seed + 10 `random.uniform` calls; HT simulation adds zero random draws). HFs identical at both tested versions (`1c9fce8` and HEAD). Survival pattern at these HFs is (100%, 80%, 20%, 60%, 80%), not Primer's (40%, 60%, 80%, 60%, 80%) — only Runs 4,5 match. The contradictory-threshold argument (no single T satisfies Run 1 and Run 2 simultaneously) holds if the AAVE simulation is deterministic, which code inspection supports but is not exhaustively verified. Untested intermediate commits not fully ruled out. Most likely explanation: uncommitted code.
+→ `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` §F2
+
+### Post-`2fd742d` multiple AAVE liquidation events (2026-03-02)
+
+Current engine (post-`2fd742d`) triggers 3 liquidation events per AAVE agent instead of 1 (old engine at `1c9fce8`). Inflates AAVE cost per agent from ~$32k to ~$77k. Root cause: behavioral changes in `2fd742d` (MOET init, leverage throttling, balance deduction).
+→ `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` §F4
 
 ## Evidence-Supported (strong code evidence, not yet presented for auditor confirmation)
 
@@ -82,3 +92,5 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Summary:
 | 2026-02-28 | D9 swap formula change | Evidence-supported | git diff `684c007..48a9ff2`, code trace |
 | 2026-02-28 | B3 fee bypass (pre-existing) | Evidence-supported | git show `684c007`, Uniswap V3 ref comparison |
 | 2026-02-28 | B4 triple-recording (pre-existing) | Evidence-supported | Code trace (3 append sites at `684c007`) |
+| 2026-03-02 | §4.2 AAVE survival non-reproducible | Validated | 3 reproduction attempts, RNG determinism proof, auditor review |
+| 2026-03-02 | Post-`2fd742d` multiple AAVE liquidations | Validated | CSV comparison (1 vs 3 events, $32k vs $77k), auditor review |

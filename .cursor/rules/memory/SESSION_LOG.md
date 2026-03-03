@@ -10,17 +10,16 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 - All 8 Primer §4 figures mapped to source scripts → `FCM_PRIMER_FIGURE_MAPPING.md`
 - All sim scripts catalogued by runnability → `RUNNABILITY_AUDIT.md`
 - `hourly_test_with_rebalancer.py` executed (modes 1 + 3), partial reproduction (2/6 panels match, 1/6 partial, 3/6 fail)
-- `balanced_scenario_monte_carlo.py` executed (after import fix), reproduction fails due to post-delivery config change
+- `balanced_scenario_monte_carlo.py`: **3 reproduction attempts** (current code, current engine+fixed config, old engine+fixed config). AAVE survival rates NOT reproducible from any committed code. AAVE cost per liquidation matches Primer at old engine. HT costs ~1.8× lower than Primer. → `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`
 - Flash crash simulation analyzed (not executed to completion — B2 leverage loop blocks)
 - Core formulas verified: Health Factor, Debt Reduction, Rebalancing algorithm
 - **Slippage discrepancy root-caused (D9)** — post-Primer swap formula change (`48a9ff2`) + pre-existing fee bypass (B3) + triple-recording (B4)
 
-**Key audit artifacts:** `sims-review/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY-ANALYSIS_full_year_sim.md`, `MOET_DOLLAR_PEG_INSTANCES.md`, `SIMULATION_STUDY_CATEGORIZATION.md`
+**Key audit artifacts:** `sims-review/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY-ANALYSIS_full_year_sim.md`, `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`, `MOET_DOLLAR_PEG_INSTANCES.md`, `SIMULATION_STUDY_CATEGORIZATION.md`
 
 **Natural next steps:**
 - Revert D9 (`48a9ff2` swap formula in `compute_swap_step`) and re-run to verify slippage matches Primer's ~$2
 - Fix D8 (snapshot frequency + chart x-axis) and re-run for full §4.3 reproduction
-- Revert D7 config and re-run `balanced_scenario_monte_carlo.py` for §4.2 reproduction
 - Fix `comprehensive_ht_vs_aave_analysis.py` import and test Figure 5
 - Resolve open questions F1 (algo profit), F2 (ALM off-by-one), B2 (leverage loop)
 
@@ -165,6 +164,22 @@ Auditor directed deeper self-analysis: the recurring accumulation/pruning failur
 9. Generalized 4 meta-learnings into `CHANGELOG.md § Meta-Learnings` (purpose conflation, silence ≠ irrelevance, compaction-as-side-effect, accumulation/pruning tension).
 
 **Process note:** Auditor offered periodic "memory maintenance" prompts between technical sessions. This is valuable — request when substantial reorganization is needed rather than doing it as a side effect of technical work.
+
+---
+
+## 2026-03-02: §4.2 Deep Reproduction — balanced_scenario_monte_carlo.py
+
+Three reproduction attempts: (1) current code as committed, (2) current engine + corrected btc_final_price, (3) old engine at `1c9fce8` + corrected config.
+→ `sims-review/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`
+
+**Key findings:**
+- F1 (= D7): btc_final_price change — already known, config restored
+- F2 (new): **AAVE survival rates NOT reproducible from ANY committed code.** Agent initial HFs deterministic across all versions (identical RNG draws). Primer's (40,60,80,60,80) pattern requires HFs no committed version generates. Only Runs 4,5 match.
+- F3 (new): HT costs ~1.8× lower than Primer ($9-13 vs $19-22 per agent) even with old engine and integer swap formula
+- F4 (new): Post-`2fd742d` engine triggers 3 liquidation events per AAVE agent (vs 1 in old engine), inflating AAVE costs from ~$32k to ~$77k per agent
+- AAVE cost per liquidation with old engine (~$32-33k) matches Primer ✓
+
+**Technical insight — RNG determinism:** AAVE agent HFs are determined solely by the seed (42 + scenario_idx × 100) and the constant number of `random.uniform` draws (5 for HT agents, then 5 for AAVE agents). The HT simulation adds zero random draws. Engine code changes (2fd742d, 48a9ff2, etc.) don't affect the RNG state when AAVE agents are created.
 
 ---
 
