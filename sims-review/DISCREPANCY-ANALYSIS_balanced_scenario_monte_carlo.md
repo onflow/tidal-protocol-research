@@ -205,40 +205,20 @@ Run: 2026-03-02. Engine at `1c9fce8`, `btc_final_price = 76,342.50`.
 **Hypothesis:** The seed is RE-SET inside `_run_high_tide_scenario` but NOT inside `_run_aave_scenario`. If AAVE ran first (before HT), it would draw from the initial seed state instead of from the post-HT-simulation state — receiving different initial HFs. Because HT resets the seed, HT agent HFs are invariant to ordering. Verified: swapped AAVE HFs = current HT HFs (the engine constructors consume identical random draws from a reset seed, so draws land at the same positions).
 
 
-| Scenario | HT Surv | AAVE Surv | HT Cost/agent | AAVE Cost/liq |
-| -------- | ------- | --------- | ------------- | ------------- |
-| Run 1    | 100%    | **60%**   | $11           | $32,638       |
-| Run 2    | 100%    | **40%**   | $13           | $32,637       |
-| Run 3    | 100%    | **80%**   | $12           | $32,485       |
-| Run 4    | 100%    | **40%**   | $9            | $32,676       |
-| Run 5    | 100%    | **60%**   | $11           | $32,307       |
+| Scenario | HT Surv | AAVE Surv | Primer AAVE Surv | Δ AAVE | HT Cost/agent | Primer HT Cost | Δ HT Cost | AAVE Cost/liq | Primer AAVE Cost | Δ AAVE Cost |
+| -------- | ------- | --------- | ---------------- | ------ | ------------- | -------------- | --------- | ------------- | ---------------- | ----------- |
+| Run 1    | 100% ✓  | **60%**   | 40%              | +20pp  | $11           | $19            | −$8       | $32,638       | $32,956          | −$318       |
+| Run 2    | 100% ✓  | **40%**   | 60%              | −20pp  | $13           | $22            | −$9       | $32,637       | $32,884          | −$247       |
+| Run 3    | 100% ✓  | **80%**   | 80%              | **0**  | $12           | $19            | −$7       | $32,485       | $32,946          | −$461       |
+| Run 4    | 100% ✓  | **40%**   | 60%              | −20pp  | $9            | $19            | −$10      | $32,676       | $32,931          | −$255       |
+| Run 5    | 100% ✓  | **60%**   | 80%              | −20pp  | $11           | $22            | −$11      | $32,307       | $32,315          | −$8         |
 
+**Comparison to Primer:**
 
-**Comparison of all configurations vs Primer:**
-
-
-| Run | Primer AAVE | Attempt 3 (current order) | Attempt 4 (swapped order) | Closer? |
-| --- | ----------- | ------------------------- | ------------------------- | ------- |
-| 1   | **40%**     | 100% (Δ=60pp)             | 60% (Δ=20pp)              | swapped |
-| 2   | **60%**     | 80% (Δ=20pp)              | 40% (Δ=20pp)              | tie     |
-| 3   | **80%**     | 20% (Δ=60pp)              | 80% ✓ (Δ=0pp)             | swapped |
-| 4   | **60%**     | 60% ✓ (Δ=0pp)             | 40% (Δ=20pp)              | current |
-| 5   | **80%**     | 80% ✓ (Δ=0pp)             | 60% (Δ=20pp)              | current |
-
-- **Total absolute error:** current order = 140pp, swapped order = 80pp (43% reduction)
-- **Exact matches:** current order = Runs 4,5; swapped order = Run 3; combined best = Runs 3,4,5
-- **HT costs and AAVE costs per liquidation:** identical between orderings (HT due to seed reset; AAVE because 1-event liquidation cost is primarily a function of debt/collateral, not initial HF)
-
-**What matches the Primer in the swapped order:**
-
-- HT survival: 100% across all scenarios ✓
-- AAVE cost per liquidation: ~$32.3–32.7k (Primer: ~$32.3–33.0k) ✓
-- Run 3 AAVE survival: 80% ✓
-
-**What does NOT match:**
-
-- Runs 1,2,4,5 AAVE survival: all off by exactly 20pp (one agent difference per run)
-- HT cost per agent: still $9–13 vs Primer's $19–22 (factor ~1.8×, see F3)
+- **HT survival:** 100% across all runs — matches Primer ✓
+- **AAVE survival:** Run 3 matches exactly. Runs 1,2,4,5 are each off by exactly 20pp (one agent). This is an improvement over Attempt 3 where total AAVE survival error was 140pp; swapped order reduces it to 80pp.
+- **AAVE cost per liquidation:** $32.3–32.7k vs Primer's $32.3–33.0k — within 1.4% ✓
+- **HT cost per agent:** $9–13 vs Primer's $19–22 — factor ~1.8× too low (see F3, not explained by ordering)
 
 ### F6: Effective liquidation threshold varies between runs
 
