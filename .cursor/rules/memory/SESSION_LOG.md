@@ -10,7 +10,7 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 - All 8 Primer §4 figures mapped to source scripts → `FCM_PRIMER_FIGURE_MAPPING.md`
 - All sim scripts catalogued by runnability → `RUNNABILITY_AUDIT.md`
 - `hourly_test_with_rebalancer.py` executed (modes 1 + 3), partial reproduction (2/6 panels match, 1/6 partial, 3/6 fail)
-- `balanced_scenario_monte_carlo.py`: **4 reproduction attempts** (current code, current engine+fixed config, old engine+fixed config, old engine+swapped order). Swapped order reduces AAVE survival error 43% (3/5 runs match combined). Commit `cfdbd21` disproven as reproduction source. HT costs ~1.8× gap and 2/5 AAVE survival runs remain unexplained. → `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`
+- `balanced_scenario_monte_carlo.py`: **5 reproduction attempts** (Attempts 1–4 documented in DISCREPANCY-ANALYSIS + Attempt 5 = F4 fix). **F4 fixed**: AAVE liquidation cascading bug root-caused to broken BTC→MOET swap (AMM scaling + routing). Replaced with direct debt repayment. Now: 1 liq event/agent, ~$34-35k cost (was 3 events, ~$77k). 4/5 AAVE survival runs match Primer. Cost residual (+$2k) traced to 0.80→0.85 collateral factor. → `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`
 - Flash crash simulation analyzed (not executed to completion — B2 leverage loop blocks)
 - Core formulas verified: Health Factor, Debt Reduction, Rebalancing algorithm
 - **Slippage discrepancy root-caused (D9)** — post-Primer swap formula change (`48a9ff2`) + pre-existing fee bypass (B3) + triple-recording (B4)
@@ -18,10 +18,11 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 **Key audit artifacts:** `sims-review/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY-ANALYSIS_full_year_sim.md`, `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`, `MOET_DOLLAR_PEG_INSTANCES.md`, `SIMULATION_STUDY_CATEGORIZATION.md`
 
 **Natural next steps:**
-- Revert D9 (`48a9ff2` swap formula in `compute_swap_step`) and re-run to verify slippage matches Primer's ~$2
+- Revert 0.85→0.80 collateral factor (`HighTideAgentState.__init__` + `AaveAgent._calculate_effective_collateral_value` + `HighTideAgent._calculate_effective_collateral_value`) to eliminate the ~$2k AAVE cost residual
+- Revert D9 (`48a9ff2` swap formula in `compute_swap_step`) and re-run to verify HT slippage matches Primer's ~$2
+- Investigate F3 (HT cost 1.8× gap) — possibly related to D9/B4 interaction or collateral factor change
+- Fix MOET:BTC pool scaling bug — `_initialize_btc_pair_positions` uses raw `total_liquidity*1e6` as L, not proper V3 liquidity derivation
 - Fix D8 (snapshot frequency + chart x-axis) and re-run for full §4.3 reproduction
-- Fix `comprehensive_ht_vs_aave_analysis.py` import and test Figure 5
-- Investigate F3 (HT cost 1.8× gap) — possibly related to B4 triple-recording interaction or different pool parameters
 - Resolve open questions F1 (algo profit), F2 (ALM off-by-one), B2 (leverage loop)
 
 ---
@@ -199,6 +200,37 @@ Claimed to be a "runnable commit" that could reproduce Primer results. Disproven
 - Per-run effective liquidation threshold varies (~1.315–1.320 vs theoretical 1.3099), likely due to BTC price path randomness via `np.random` (F6).
 - HT costs and AAVE costs per liquidation are unchanged by ordering (HT: seed reset; AAVE: cost is f(debt/collateral)).
 - F3 (HT cost 1.8× gap) remains unexplained.
+
+---
+
+## 2026-03-03: F4 Fix — AAVE Liquidation Cascading Bug
+
+**Root cause chain (fully traced):**
+1. `execute_aave_liquidation` created a fresh MOET:BTC Uniswap V3 pool and called `calculate_swap_slippage(btc_value, "BTC")` to convert seized BTC→MOET
+2. Post-`1c9fce8`, BTC swap routing changed from `_calculate_btc_to_moet_swap` (correct) to `_calculate_btc_to_stablecoin_swap` (double-converts USD value → astronomical swap amount)
+3. Pool exhausted liquidity → post-`1c9fce8` code raised `ValueError("LIQUIDITY COVERAGE FAILURE")` → exception handler returned `amount_out: 0.0`
+4. Agent's BTC seized but zero debt repaid → HF crashed (1.0→0.55→0.10→0) → 3 cascading liquidations → $77k total cost
+5. **Deeper issue**: even with routing fixed, the MOET:BTC pool has fundamental scaling bug: `_initialize_btc_pair_positions` uses raw `total_liquidity * 1e6` as L, treating it as abstract units regardless of token price ratios. Pool returns ~1:1 in raw units instead of ~79,000:1 for BTC:MOET. This affects both old and new code but old code masked it by running swap loop with stale liquidity past uncovered ticks.
+
+**Fix applied:**
+- `aave_agent.py:execute_aave_liquidation` — replaced broken AMM swap with direct debt repayment. Matches real AAVE mechanics: liquidator provides stablecoins directly, no AMM intermediary. Debt reduced by 50%, BTC seized = `debt_reduction * 1.05 / btc_price`.
+- `uniswap_v3_math.py` — two ancillary fixes: (a) `LIQUIDITY COVERAGE FAILURE` now `break`s gracefully instead of `raise ValueError`, returning partial swap result; (b) BTC swap routing restored for MOET:BTC pools (routes to `_calculate_btc_to_moet_swap` instead of broken stablecoin function).
+
+**Results after fix:**
+| Run | AAVE surv (sim/primer) | Cost/agent (sim/primer) |
+|-----|----------------------|------------------------|
+| 1   | 60% / 80% (-20pp)    | $34,678 / $32,210      |
+| 2   | 40% / 40% ✓          | $34,677 / $33,130      |
+| 3   | 80% / 80% ✓          | $34,516 / $32,210      |
+| 4   | 40% / 40% ✓          | $34,719 / $33,125      |
+| 5   | 60% / 60% ✓          | $34,326 / $32,668      |
+
+- Liquidation events: 1 per agent (was 3) ✓
+- Cost residual: +$1.5-2.5k explained by 0.80→0.85 collateral factor change (6.25% more debt → proportionally more BTC seized)
+- Survival: 4/5 runs match; Run 1 off by 20pp (RNG boundary effect, previously documented)
+- **F4 finding status**: `evidence-supported` → ready for validation
+
+**Still deferred:** D9 (swap formula revert for HT costs), F3 (HT cost 1.8× gap), pool scaling bug (affects all BTC:stablecoin swaps)
 
 ---
 

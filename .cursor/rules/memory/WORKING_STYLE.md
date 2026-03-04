@@ -64,8 +64,8 @@ For discrepancy analysis, I track two kinds of findings:
 
 | Direction | Reinforcements | Last Applied | Notes |
 |-----------|----------------|--------------|-------|
-| Comment handling | 1 | 2026-02-20 | Never silently remove comments. Update if still relevant. Ask before removing obsolete blocks. |
-| Minimal invasiveness | 1 | 2026-02-05 | Avoid modifying simulation code; prefer wrappers, orchestration layers, smarter terminal calls |
+| Comment handling | 2 | 2026-03-03 | Never silently remove comments. When rewriting a function body, preserve all existing comments that document intent, assumptions, or non-obvious logic. Update wording only where the old comment contradicts the new code. Stripping comments during a rewrite is the same failure mode as stripping comments during a refactor. |
+| Minimal invasiveness | 3 | 2026-03-03 | Modify only the broken part. When fixing a bug in a function, keep the function skeleton (guards, comments, variable names, structure) and replace only the lines that implement the broken behavior. A full rewrite triggers clean-slate thinking that treats existing comments and structure as expendable. **Corollary**: When a fix bypasses code (e.g., removing a swap call), don't also modify the bypassed code — changes to shared infrastructure affect all callers, not just the one you're fixing. Extraordinary changes (removing fail-fast guards, changing error handling strategy) require extraordinary evidence: enumerate all callers, verify impact on each. |
 
 ## Git Hygiene
 
