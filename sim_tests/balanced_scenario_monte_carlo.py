@@ -414,13 +414,18 @@ class ComprehensiveHTvsAaveAnalysis:
             
             print(f"     Run {run_id + 1}/{self.config.num_monte_carlo_runs}...", end=" ")
             
-            # Run High Tide scenario
-            ht_result = self._run_high_tide_scenario(hf_scenario, run_id, seed)
-            ht_runs.append(ht_result)
+            # Run both simulations with identical parameters
             
-            # Run AAVE scenario with identical parameters
+            # Note that Aave simulation does not internally re-seeds its RNG state. By running it first,
+            # AAVE agent parameters are deterministically generated based on the RNG seed we set above. 
+            # CAUTION: if HT was to run before, Aave agents might change depending on implementation-
+            #          internal details in the HT simulations (how many random draws are consumed).
             aave_result = self._run_aave_scenario(hf_scenario, run_id, seed)
             aave_runs.append(aave_result)
+            
+            # HT runs second: _run_high_tide_scenario resets seed internally, making HT results order-invariant.
+            ht_result = self._run_high_tide_scenario(hf_scenario, run_id, seed)
+            ht_runs.append(ht_result)
             
             print("✓")
         

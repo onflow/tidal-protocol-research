@@ -1727,6 +1727,14 @@ class UniswapV3SlippageCalculator:
             else:
                 return self._calculate_moet_to_btc_swap(amount_in)
         elif token_in == "BTC":
+            # MOET:BTC pools need _btc_to_moet_swap, not _btc_to_stablecoin_swap.
+            # The stablecoin variant applies a USD→BTC price conversion that double-converts
+            # when the pool already prices in MOET (≈$1) terms.
+            #  - "MOET" in name: only applies to MOET:BTC pools (not USDC:BTC, USDF:BTC)
+            #  - "USDC" not in name: excludes MOET:USDC:BTC composite pool names
+            #  - "USDF" not in name: excludes MOET:USDF:BTC composite pool names
+            if "MOET" in self.pool.pool_name and "USDC" not in self.pool.pool_name and "USDF" not in self.pool.pool_name:
+                return self._calculate_btc_to_moet_swap(amount_in)
             return self._calculate_btc_to_stablecoin_swap(amount_in)
         elif token_in == "Yield_Token":
             return self._calculate_yield_token_to_moet_swap(amount_in)

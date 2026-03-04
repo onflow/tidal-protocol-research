@@ -13,7 +13,6 @@ from .base_agent import BaseAgent, AgentAction, AgentState
 from .high_tide_agent import HighTideAgentState  # Reuse the state structure
 from ..core.protocol import Asset
 from ..core.yield_tokens import YieldTokenManager
-from ..core.uniswap_v3_math import calculate_liquidation_cost_with_slippage
 
 
 class AaveAgentState(HighTideAgentState):
@@ -159,11 +158,19 @@ class AaveAgent(BaseAgent):
     def execute_aave_liquidation(self, current_minute: int, asset_prices: Dict[Asset, float], 
                                 pool_size_usd: float = 500_000) -> dict:
         """
-        Execute AAVE-style liquidation with proper Uniswap V3 math:
-        1. Seize 50% of collateral (BTC)
-        2. Swap BTC -> MOET through Uniswap V3 pool
-        3. Use MOET to pay down debt
-        4. Liquidator receives 5% bonus on debt repaid (in BTC value)
+        Execute AAVE-style liquidation:
+        1. Repay 50% of debt directly (no AMM swap — see F4 fix note below)
+        2. Seize collateral: (debt_repaid × 1.05) / btc_price
+        3. Liquidator receives 5% bonus on debt repaid (in BTC value)
+
+        Note: other version of this code used a UniswapV3 pool to swap BTC (collateral) → MOET
+        to simulate slippage, but the MOET:BTC pool has a scaling bug (`_initialize_btc_pair_positions`
+        uses raw total_liquidity*1e6 as L, ignoring the ~79,000× BTC/MOET price ratio). This caused
+        swaps to return ~$0.44 instead of ~$35k, triggering cascading liquidations (3 events per
+        agent instead of 1).
+        We bypass this (still existing) bug by emulating conventional liquidations by an active
+        external party (liquidator) providing stablecoins directly. This approach of direct repayment
+        matches real AAVE mechanics, but neglects slippage and fees a real liquidator would incur.
         """
         if self.state.health_factor >= 1.0:
             return {}  # No liquidation needed
@@ -193,32 +200,18 @@ class AaveAgent(BaseAgent):
         if btc_to_seize <= 0:
             return {}  # No collateral to liquidate
         
-        # 5. Use Uniswap V3 math to calculate actual MOET received from BTC swap
-        from ..core.uniswap_v3_math import create_moet_btc_pool, UniswapV3SlippageCalculator
+        # 5. Direct debt repayment - bypasses the UniswapV3 scaling bug present in our simulation
+        actual_debt_repaid = debt_reduction
         
-        # Create pool and calculator
-        pool = create_moet_btc_pool(pool_size_usd, btc_price)
-        calculator = UniswapV3SlippageCalculator(pool)
-        
-        # Calculate BTC -> MOET swap with slippage
-        btc_value_to_swap = btc_to_seize * btc_price
-        swap_result = calculator.calculate_swap_slippage(btc_value_to_swap, "BTC")
-        
-        # Actual MOET received from swap (after slippage and fees)
-        actual_moet_received = swap_result["amount_out"]
-        
-        # 6. Calculate actual debt that can be repaid (limited by MOET received)
-        actual_debt_repaid = min(debt_reduction, actual_moet_received)
-        
-        # 7. Calculate liquidation bonus (5% of debt repaid, in BTC value)
+        # 6. Calculate liquidation bonus (5% of debt repaid, in BTC value)
         liquidation_bonus_value = actual_debt_repaid * liquidation_bonus_rate
         liquidation_bonus_btc = liquidation_bonus_value / btc_price
         
-        # 8. Execute liquidation
+        # 7. Execute liquidation
         self.state.supplied_balances[Asset.BTC] -= btc_to_seize
         self.state.moet_debt -= actual_debt_repaid
         
-        # Track liquidation event with Uniswap V3 details
+        # Track liquidation event
         liquidation_event = {
             "minute": current_minute,
             "btc_seized": btc_to_seize,
@@ -228,10 +221,6 @@ class AaveAgent(BaseAgent):
             "liquidation_bonus_rate": liquidation_bonus_rate,
             "liquidation_bonus_value": liquidation_bonus_value,
             "liquidation_bonus_btc": liquidation_bonus_btc,
-            "moet_received_from_swap": actual_moet_received,
-            "swap_slippage": swap_result["slippage_amount"],
-            "swap_fees": swap_result["trading_fees"],
-            "price_impact": swap_result["price_impact_percentage"],
             "health_factor_before": self.state.health_factor,
             "remaining_collateral": self.state.supplied_balances.get(Asset.BTC, 0.0),
             "remaining_debt": self.state.moet_debt
