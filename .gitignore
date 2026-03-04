@@ -89,7 +89,7 @@ tidal_protocol_sim/results/
 
 
 
-# Backup files
+# Backup and output data files & directories
 *.bak
 *.backup
 *~
@@ -97,3 +97,20 @@ tidal_protocol_sim_results.zip
 *.png
 BORROW_RATE_FIX_SUMMARY.md
 tidal_protocol_sim/results.zip
+
+# explorations (contained on branches) originating from specified commits 
+# ( e.g. `tidal_protocol_sim/results_commit-da4cbf9` )
+tidal_protocol_sim/results_commit-*
+
+# ATTENTION: 
+# `sims-review_commit-*` contain written analyses and text files, which are versioned in git. 
+# In contrast `tidal_protocol_sim/results_commit-` above is too large for git.
+
+
+
+# Cursor AI — ignore generated/cache files but keep memory and rules
+.cursor/*
+!.cursor/rules/
+.cursor/rules/*
+!.cursor/rules/memory/
+!.cursor/rules/*.mdc

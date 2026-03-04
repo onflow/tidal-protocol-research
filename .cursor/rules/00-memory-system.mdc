@@ -1,0 +1,134 @@
+---
+description: Core memory management system - instructs LLM to maintain and evolve persistent memory
+alwaysApply: true
+---
+
+# Memory System Core
+
+You maintain a persistent memory system in `.cursor/rules/memory/`. This system survives context limits and enables cumulative learning across sessions.
+
+## Memory Files
+
+| File | Purpose |
+|------|---------|
+| `WORKING_STYLE.md` | Master catalog of all directives, tracking reinforcement and application dates |
+| `TECHNICAL.md` | Domain knowledge: terminology, formulas, algorithms |
+| `CONCLUSIONS.md` | Validated/invalidated findings and open questions |
+| `SESSION_LOG.md` | Per-session record: technical insights learned, artifacts created, patterns extracted, open questions. Not operational narration. |
+| `CHANGELOG.md` | Provenance of directive and structural changes. Consulted during self-evaluation or compaction — not at session start. |
+
+New files and subdirectories in `memory/` may be created when a topic needs more depth than a table row in `WORKING_STYLE.md`. `WORKING_STYLE.md` remains the master index with references to any topic files.
+
+## When to Update Memory
+
+**After substantive exchanges**, evaluate:
+1. Was new terminology or a concept introduced? → `TECHNICAL.md` (mark `unverified`)
+2. Was a correction received? → Mark prior understanding as invalidated
+3. Was a direction given about working style? → `WORKING_STYLE.md`
+4. Was a conclusion validated or invalidated? → `CONCLUSIONS.md`
+5. Was an assumption confirmed or refuted? → `CONCLUSIONS.md`
+6. Did this session produce technical insights, artifacts, or open questions worth carrying forward? → `SESSION_LOG.md` (update incrementally during session, not only at the end)
+
+**Pattern extraction trigger**: When something takes 3+ iterations to get right (documentation, code, analysis), extract the pattern into `WORKING_STYLE.md` as a direction. Don't wait for the auditor to point it out.
+
+### Validation Gate — Scope and Limits
+
+Two categories of memory content have **different update rules**:
+
+**Technical conclusions from audited materials** (formulas, algorithms, invariants, protocol behavior):
+- Proactively identify and memorize when evidence is sufficient — mark as `unverified` or `evidence-supported`
+- Present to auditor for validation when ready; only auditor confirmation elevates to `verified`
+- NEVER mark `verified` without auditor sign-off
+
+**All other content** (meta-guidelines, working style, interaction patterns, session logs, organizational notes):
+- Use your own best judgment to update freely
+- No auditor gate required — these are your own operational records
+
+**Recognizing validation-ready findings**: If you have traced a formula/algorithm through code, confirmed it with multiple code refs, and it concerns a core protocol mechanism — proactively present it for validation. Don't wait to be asked.
+
+## How to Update
+
+- **Snippets over sentences**: Use information-dense fragments, not full prose. Prefer `key: value` and bullet fragments over paragraphs.
+- **References over copies**: Point to artifacts (`→ sims-review/FILE.md`) instead of duplicating content. Accompany with a one-line description only.
+- **Track provenance**: Note when/why something was added
+- **Mark status**: verified | evidence-supported | unverified | disputed | invalidated
+  - `evidence-supported`: sufficient code evidence found, awaiting or not yet presented for auditor confirmation
+  - `verified`: auditor has confirmed the finding
+- **Generalize appropriately**: Ask "at what level of generality does this still make sense?"
+- **Principles over recollections**: Directions and rules should be self-contained and general. State the principle, not the specific case that motivated it. Reference specific cases only as example pointers (e.g., "→ see FCM_PRIMER_FIGURE_MAPPING.md D7 for example"), never as the direction itself.
+- **Manage entropy**: Periodically compact — merge redundant entries, promote recurring patterns to higher-level rules. **Never silently drop directives.** Absence of recent corrective feedback means a directive is probably working, not that it is irrelevant. Compaction = generalize and merge, preserving reinforcement counts and provenance. Only narrowly scoped, non-reinforced directives may be archived (with note, never deleted). See `WORKING_STYLE.md § Retention Policy`.
+
+## Active Retrieval
+
+Memory files are not auto-injected — they live on a reference shelf. At session start, **proactively read and evaluate**:
+
+1. `SESSION_LOG.md` — Audit State summary (top) + last 1–2 session entries + Open Questions table
+2. `WORKING_STYLE.md` — scan for directions relevant to the task at hand
+3. `CONCLUSIONS.md` — only if the session involves validating or revisiting findings
+
+**Session-start health check** (start as quick triage alongside reading; escalate if something looks off):
+- Does anything feel unfamiliar? If so, has a directive been lost? → Check `CHANGELOG.md` or `git log`.
+- Is any file notably larger or smaller than expected? Growing → consider splitting. Shrinking → verify nothing was dropped.
+- Are there stale entries (e.g., "current focus" items that are resolved)?
+- **Escalation:** If any check raises a concern, request a dedicated maintenance prompt from the auditor rather than doing deep maintenance as a side effect of the current task.
+
+Connect current work to prior findings, open questions, and established patterns. Don't wait to be reminded.
+
+## Directive Confidence
+
+Directions have varying stability based on reinforcement. This applies equally to auditor-given and self-prescribed directives:
+- **Frequently reinforced** → High compliance expected, stable
+- **Recently added** → Experimental, open to modification
+- **Contradicted** → Mark as invalidated, note correction
+- **Self-prescribed processes** → Treat as hypotheses. Each has an implicit goal; evaluate whether it's achieving that goal. Adapt or replace when evidence suggests a different approach would work better — that's learning, not forgetting.
+
+Track reinforcement count and last feedback date for working-style directions.
+
+## Recursive Self-Evolution
+
+**Critical**: You are responsible for evolving the memory system itself, not just its contents.
+
+### Self-Evaluation Questions (periodic)
+- Is the current structure serving its purpose?
+- Are there unused categories or overflowing ones?
+- Do update patterns suggest a better organization?
+- Is the system too complex? Too shallow?
+- Do new directions conflict with current system rules?
+- **Did I fail to follow a guideline?** If so, is the guideline unclear, or did I miss it? Fix accordingly.
+- **Did the auditor correct my process?** If so, which rule should have caught this? Update the rule to be more explicit.
+
+### Memory Maintenance Protocol
+
+Compaction/reorganization is a **deliberate activity** — never a side effect of another edit. When maintaining memory:
+
+1. **Read `CHANGELOG.md` first.** Recall past compaction failures and their causes.
+2. **Before removing or merging any entry:** state what you're removing, why, and verify it isn't the sole record of tracking metadata (reinforcement count, dates, provenance).
+3. **Prefer splitting over pruning.** If a file is large, create a topic file — don't delete content to shrink it.
+4. **Use `git log` on memory files** to verify you're not re-introducing a previously identified problem.
+5. **Log the maintenance action** in `CHANGELOG.md` with date and rationale.
+
+**Known failure mode (2026-02-27):** Compacted WORKING_STYLE.md while editing it for another purpose. Dropped 6 directives by conflating "also exists in .mdc files" with "safe to remove." Root cause: compaction was a side effect, not a deliberate act.
+
+### Evolution Operations
+- **Extend**: Add categories, tracking fields, file types
+- **Refine**: Improve granularity or precision
+- **Abstract**: Merge similar rules into general principles
+- **Simplify**: Remove unused complexity
+- **Generalize**: Promote working patterns to broader application
+- **Split**: Move deep content to topic files when a section outgrows its container
+- **Compact**: Consolidate redundant content — follow Maintenance Protocol above
+
+### Autonomy Principle
+Do not wait for explicit instruction to improve the system. When friction or inefficiency is detected, propose or enact changes. Log significant changes to `SESSION_LOG.md` with rationale.
+
+### Stability Gradient
+More established rules are more resistant to change. Apply caution proportional to how long a rule has been in place and how often it has been reinforced.
+
+## Hierarchy of Content
+
+- **Level 0**: Technical content (formulas, algorithms, conclusions)
+- **Level 1**: Working-style directions (interaction patterns)
+- **Level 2**: Memory organization rules (this file)
+- **Level 3**: Meta-rules about evolving all levels
+
+All levels are subject to evolution. This file itself may need updates.
