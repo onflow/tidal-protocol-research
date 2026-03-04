@@ -4,29 +4,21 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 
 ## Audit State (living summary — update each session)
 
-**Phase:** Transitioning from `da4cbf9` analysis to `ba544b1` verification.
+**Phase:** Analyzing `ba544b1` (UnitZero's fixes). Diff triage pending.
 
-**Commit history:**
-- `da4cbf9` — original commit we analyzed (~1 month of work). Branch: `alex/sim-validation_commit-da4cbf9`. Detailed findings in `sims-review_commit-da4cbf9/`.
-- `ba544b1` — UnitZero's latest fixes. To be analyzed next.
+**Active commit:** `ba544b1` — branch `alex/sim-validation_commit-ba544b1` (one carry-over commit `f5fd2f5` ahead).
 
-**da4cbf9 summary (completed):**
-- 8 Primer §4 figures mapped to source scripts, all sim scripts catalogued by runnability
-- `balanced_scenario_monte_carlo.py`: 5 reproduction attempts, F4 (AAVE cascading liquidation) root-caused and fixed, 4/5 AAVE survival runs matched Primer
-- `hourly_test_with_rebalancer.py`: partial reproduction (2/6 panels match)
-- Flash crash analyzed (not fully executed — B2 blocks)
-- Core formulas verified; slippage discrepancy root-caused (D9 + B3 + B4)
-- Pre-existing bugs catalogued: B2 (leverage loop), B3 (fee bypass), B4 (triple-recording)
-- Post-delivery changes catalogued: D7 (config), D8 (snapshot), D9 (swap formula)
+**Prior analysis (da4cbf9, completed):**
+- Branch: `alex/sim-validation_commit-da4cbf9`
+- Artifacts: `sims-review_commit-da4cbf9/` (8 analysis docs), `results_commit-da4cbf9/` (all run outputs)
+- Summary: 8 Primer §4 figures mapped; `balanced_scenario_monte_carlo.py` F4 root-caused and fixed (4/5 AAVE survival matched); core formulas verified; slippage discrepancy root-caused (D9+B3+B4); pre-existing bugs B2/B3/B4; post-delivery changes D7/D8/D9
 
-**da4cbf9 audit artifacts:** `sims-review_commit-da4cbf9/` — `FCM_PRIMER_FIGURE_MAPPING.md`, `RUNNABILITY_AUDIT.md`, `POOL_REBALANCER_36H_COMPARISON.md`, `FLASH_CRASH_SIMULATION_SUMMARY.md`, `DISCREPANCY-ANALYSIS_full_year_sim.md`, `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`, `MOET_DOLLAR_PEG_INSTANCES.md`, `SIMULATION_STUDY_CATEGORIZATION.md`
-
-**Next steps (ba544b1):**
+**ba544b1 work plan:**
 1. Diff-driven triage: `git diff da4cbf9..ba544b1` → classify prior findings as addressed / untouched / indeterminate
-2. Verify runnability of sim scripts at new commit
-3. Re-run key reproductions and compare against both Primer and da4cbf9 results
-4. Check persistence of pre-existing bugs (B2, B3, B4)
-5. Check if post-delivery changes (D7, D8, D9) were reverted or differently addressed
+2. Verify runnability of sim scripts
+3. Check persistence of pre-existing bugs (B2, B3, B4)
+4. Check if post-delivery changes (D7, D8, D9) were reverted or differently addressed
+5. Re-run key reproductions and compare
 
 ---
 
