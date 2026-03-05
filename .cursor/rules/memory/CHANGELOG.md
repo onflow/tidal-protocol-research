@@ -36,6 +36,8 @@ On-demand provenance record. Tracks structural changes to the memory system and 
 | 2026-03-02 | Validation gate | Reinforced (+1) | Positive feedback on proactive ask. Now at 2 reinforcements. |
 | 2026-03-02 | Verify universal claims mechanically | Added | Exhaustive-coverage claims require exhaustive tools (grep, AST), not reasoning alone |
 | 2026-03-02 | Clean up checkout artifacts | Added | After `git checkout <commit> -- <path>`, diff against old commit before deleting |
+| 2026-03-03 | Comment handling | Reinforced (+1) | Violated during aave_agent.py F4 fix — replaced code block without enumerating original comments. Added pre-flight check: enumerate comments before writing replacement. Now at 3. |
+| 2026-03-03 | Minimal invasiveness | Reinforced (+1) | Same incident. "Replace the broken code" mindset = clean-slate thinking. Now at 4. |
 
 ## Structural Changes
 

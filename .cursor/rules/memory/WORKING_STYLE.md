@@ -1,6 +1,6 @@
 # Working Style Directions
 
-Last updated: 2026-03-02
+Last updated: 2026-03-03
 
 ## Retention and Evaluation
 
@@ -64,8 +64,9 @@ For discrepancy analysis, I track two kinds of findings:
 
 | Direction | Reinforcements | Last Applied | Notes |
 |-----------|----------------|--------------|-------|
-| Comment handling | 2 | 2026-03-03 | Never silently remove comments. When rewriting a function body, preserve all existing comments that document intent, assumptions, or non-obvious logic. Update wording only where the old comment contradicts the new code. Stripping comments during a rewrite is the same failure mode as stripping comments during a refactor. |
-| Minimal invasiveness | 3 | 2026-03-03 | Modify only the broken part. When fixing a bug in a function, keep the function skeleton (guards, comments, variable names, structure) and replace only the lines that implement the broken behavior. A full rewrite triggers clean-slate thinking that treats existing comments and structure as expendable. **Corollary**: When a fix bypasses code (e.g., removing a swap call), don't also modify the bypassed code — changes to shared infrastructure affect all callers, not just the one you're fixing. Extraordinary changes (removing fail-fast guards, changing error handling strategy) require extraordinary evidence: enumerate all callers, verify impact on each. |
+| Comment handling | 3 | 2026-03-03 | Never silently remove comments. When rewriting a function body, preserve all existing comments that document intent, assumptions, or non-obvious logic. Update wording only where the old comment contradicts the new code. Stripping comments during a rewrite is the same failure mode as stripping comments during a refactor. **Pre-flight check**: Before writing a replacement block, enumerate every comment in the original and decide: keep verbatim, update wording, or replace with explanation of why the original code was removed. Do this BEFORE writing the new code, not after. |
+| Minimal invasiveness | 4 | 2026-03-03 | Modify only the broken part. When fixing a bug in a function, keep the function skeleton (guards, comments, variable names, structure) and replace only the lines that implement the broken behavior. A full rewrite triggers clean-slate thinking that treats existing comments and structure as expendable. **Corollary**: When a fix bypasses code (e.g., removing a swap call), don't also modify the bypassed code — changes to shared infrastructure affect all callers, not just the one you're fixing. Extraordinary changes (removing fail-fast guards, changing error handling strategy) require extraordinary evidence: enumerate all callers, verify impact on each. |
+| Consistency scope | 2 | 2026-03-03 | After making a localized edit, check the broader context: the function's docstring, the class, callers, and adjacent files for comments or documentation that now contradict the changed behavior. A reader forms their mental model from the outermost documentation inward (docstring → inline comments → code). **Distinguish design-intent comments from implementation comments.** Design-intent comments (architecture, intended flow, rationale qualifiers like "with proper X math") describe what the code is *supposed* to do and help future developers understand the scope of safe changes. When an edit works around a bug without changing the design, preserve the design-intent comment and add a NOTE explaining the current deviation. Only rewrite design comments when the design itself changes. Implementation comments that describe removed code should be replaced with brief context about what was removed and why. Interface elements (dict keys, function signatures) should generally be preserved. |
 
 ## Git Hygiene
 

@@ -56,7 +56,7 @@ Findings from our analysis of commit `da4cbf9`. Each becomes a zero-hypothesis t
 |----|---------|---------------|---------------|-----|
 | F2 | AAVE survival rates not reproducible from any tested committed code — HFs deterministic but don't match Primer pattern | validated | to-verify | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F2` |
 | F3 | HT costs ~1.8× lower than Primer at every tested commit | evidence-supported | to-verify | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F3` |
-| F6 | Swapped sim order reduces AAVE survival error 43% (3/5 runs match) | validated | to-verify | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §Attempt 4` |
+| F6 | Swapped sim order reduces AAVE survival error: 1/5 runs match exactly (Run 3), others off by 20pp; prior "3/5" claim was based on stale sim values in "Primer" column | validated | verified | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §Attempt 4` |
 | — | `cfdbd21` cannot reproduce Primer (wrong config, all post-delivery changes present) | evidence-supported | n/a | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §Avenue 1` |
 | — | Discrepancy check false positive in `full_year_sim.py:2951` | validated | to-verify | `DISCREPANCY-ANALYSIS_full_year_sim.md` |
 | — | MOET:BTC pool scaling bug — `_initialize_btc_pair_positions` uses raw `total_liquidity*1e6` as L | evidence-supported | to-verify | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F4 root cause` |
@@ -66,13 +66,16 @@ Findings from our analysis of commit `da4cbf9`. Each becomes a zero-hypothesis t
 ## ba544b1 Findings
 
 ### Verified
-(none yet)
+
+**All da4cbf9 prior-art findings confirmed at ba544b1 (2026-03-03):** The ba544b1 diff is purely organizational (file moves); no engine, agent, or math files were changed. B2, B3, B4, D7, D8, D9, F4, F6 all persist unchanged. Confirmed by re-running `balanced_scenario_monte_carlo.py` with identical fix set and obtaining identical results.
+
+**Figure 2 Reproduction (2026-03-03):** With 3 fixes (import stub removal, D7 btc_final_price, F4 direct debt repayment) + swapped simulation order: AAVE survival (60%, 40%, 80%, 40%, 60%) vs Primer (40%, 60%, 80%, 60%, 80%). Run 3 matches exactly; others off by 20pp. AAVE costs ~$34.5k vs Primer ~$32.9k (+5% explained by collateral factor 0.85 vs 0.80). Auditor: results "look intuitively better than what is currently in the primer."
 
 ### Evidence-Supported
-(none yet)
+(none yet beyond what's confirmed above)
 
 ### Invalidated in ba544b1
-(findings from da4cbf9 that UnitZero's fixes addressed — to be populated after diff triage)
+(none — UnitZero's changes were purely organizational)
 
 ---
 
@@ -107,3 +110,5 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Carried forward from
 | 2026-03-02b | `cfdbd21` cannot reproduce Primer | Evidence-supported | File identity check |
 | 2026-03-02b | HT sim consumes random draws | Evidence-supported | Engine-only vs full-sim comparison |
 | 2026-03-03 | **Commit transition** | Restructured | All da4cbf9 findings → Prior Art; ba544b1 sections created |
+| 2026-03-03 | F6 "3/5 match" claim | Corrected | Prior "Primer" column was stale sim values; actual match is 1/5 (Run 3 only) |
+| 2026-03-03 | ba544b1 reproduction confirmed | Evidence-supported | Identical results to da4cbf9 Attempt 4; all prior findings persist |

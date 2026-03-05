@@ -30,9 +30,8 @@ from tidal_protocol_sim.agents.high_tide_agent import HighTideAgent
 from tidal_protocol_sim.agents.aave_agent import AaveAgent
 from tidal_protocol_sim.core.protocol import TidalProtocol, Asset
 
-# Import the custom agent creation function from target health factor analysis
-sys.path.append(str(Path(__file__).parent))
-from target_health_factor_analysis import create_custom_agents_for_hf_test
+# target_health_factor_analysis was removed in commit 684c007;
+# create_custom_agents_for_hf_test was imported but never used in this script.
 
 
 class AnalysisHighTideEngine(HighTideVaultEngine):
@@ -201,7 +200,7 @@ class ComprehensiveComparisonConfig:
         # BTC decline scenarios
         self.btc_decline_duration = 60  # 60 minutes
         self.btc_initial_price = 100_000.0
-        self.btc_final_price = 90_000.0  # 25.00% decline (consistent with previous analysis)
+        self.btc_final_price = 76_342.50  # 23.66% decline (original value before 684c007)
         
         # Enhanced Uniswap V3 Pool Configurations
         self.moet_btc_pool_config = {
@@ -423,13 +422,13 @@ class ComprehensiveHTvsAaveAnalysis:
             
             print(f"     Run {run_id + 1}/{self.config.num_monte_carlo_runs}...", end=" ")
             
-            # Run High Tide scenario
-            ht_result = self._run_high_tide_scenario(hf_scenario, run_id, seed)
-            ht_runs.append(ht_result)
-            
-            # Run AAVE scenario with identical parameters
+            # Run AAVE scenario first (before HT simulation consumes RNG draws)
             aave_result = self._run_aave_scenario(hf_scenario, run_id, seed)
             aave_runs.append(aave_result)
+
+            # Run High Tide scenario (resets seed internally, invariant to ordering)
+            ht_result = self._run_high_tide_scenario(hf_scenario, run_id, seed)
+            ht_runs.append(ht_result)
             
             print("✓")
         

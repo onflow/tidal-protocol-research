@@ -211,18 +211,19 @@ Claimed to be a "runnable commit" that could reproduce Primer results. Disproven
 - `aave_agent.py:execute_aave_liquidation` — replaced broken AMM swap with direct debt repayment. Matches real AAVE mechanics: liquidator provides stablecoins directly, no AMM intermediary. Debt reduced by 50%, BTC seized = `debt_reduction * 1.05 / btc_price`.
 - `uniswap_v3_math.py` — two ancillary fixes: (a) `LIQUIDITY COVERAGE FAILURE` now `break`s gracefully instead of `raise ValueError`, returning partial swap result; (b) BTC swap routing restored for MOET:BTC pools (routes to `_calculate_btc_to_moet_swap` instead of broken stablecoin function).
 
-**Results after fix:**
-| Run | AAVE surv (sim/primer) | Cost/agent (sim/primer) |
-|-----|----------------------|------------------------|
-| 1   | 60% / 80% (-20pp)    | $34,678 / $32,210      |
-| 2   | 40% / 40% ✓          | $34,677 / $33,130      |
-| 3   | 80% / 80% ✓          | $34,516 / $32,210      |
-| 4   | 40% / 40% ✓          | $34,719 / $33,125      |
-| 5   | 60% / 60% ✓          | $34,326 / $32,668      |
+**Results after fix (da4cbf9, HT-first order):**
+| Run | AAVE surv (sim) | AAVE surv (Primer) | Δ | Cost/liq (sim/Primer) |
+|-----|----------------|-------------------|---|----------------------|
+| 1   | 60%            | 40%               | +20pp | $34,678 / $32,956 |
+| 2   | 40%            | 60%               | −20pp | $34,677 / $32,884 |
+| 3   | **80%**        | **80%**           | **0 ✓** | $34,516 / $32,946 |
+| 4   | 40%            | 60%               | −20pp | $34,719 / $32,931 |
+| 5   | 60%            | 80%               | −20pp | $34,326 / $32,315 |
 
 - Liquidation events: 1 per agent (was 3) ✓
-- Cost residual: +$1.5-2.5k explained by 0.80→0.85 collateral factor change (6.25% more debt → proportionally more BTC seized)
-- Survival: 4/5 runs match; Run 1 off by 20pp (RNG boundary effect, previously documented)
+- Cost residual: +$1.5–2.5k explained by 0.80→0.85 collateral factor change
+- Survival: **1/5 runs match** (Run 3 only); others off by exactly 20pp (one agent each)
+- **Note**: prior session log entry had stale sim values in the "Primer" column — corrected 2026-03-03
 - **F4 finding status**: `evidence-supported` → ready for validation
 
 **Still deferred:** D9 (swap formula revert for HT costs), F3 (HT cost 1.8× gap), pool scaling bug (affects all BTC:stablecoin swaps)
@@ -240,6 +241,33 @@ Claimed to be a "runnable commit" that could reproduce Primer results. Disproven
 - New analysis will go in `sims-review_commit-ba544b1/` and `results_commit-ba544b1/`
 
 **Approach for ba544b1:** Diff-driven triage first — classify each prior finding by whether UnitZero's changes touched the relevant code. Then verify in priority order: pre-existing bugs (likely persist) → post-delivery changes (may be addressed) → reproduction attempts.
+
+---
+
+## 2026-03-03: Figure 2 Reproduction at ba544b1
+
+**ba544b1 diff result:** Pure file reorganization (`archive_tests/`, `comprehensive_tests/`). No changes to any core engine, agent, or math file. `balanced_scenario_monte_carlo.py` byte-identical to `da4cbf9` version. No new reproduction guidance added.
+
+**Fixes required (same as da4cbf9):**
+1. **Import fix** — `from target_health_factor_analysis import create_custom_agents_for_hf_test` (file deleted in `684c007`, function never called): remove import statement
+2. **D7** — `btc_final_price`: `90_000.0` → `76_342.50`
+3. **F4 fix** — `aave_agent.py:execute_aave_liquidation`: replace broken AMM swap with direct debt repayment
+4. **Simulation order** — swap AAVE before HT (HT resets seed internally; AAVE doesn't)
+
+**Results (F4 fix + swapped order):**
+| Run | AAVE surv (sim) | Primer | Δ | Cost/liq (sim/Primer) |
+|-----|----------------|--------|---|----------------------|
+| 1 | 60% | 40% | +20pp | $34,678 / $32,956 |
+| 2 | 40% | 60% | −20pp | $34,677 / $32,884 |
+| 3 | **80%** | **80%** | **0 ✓** | $34,516 / $32,946 |
+| 4 | 40% | 60% | −20pp | $34,719 / $32,931 |
+| 5 | 60% | 80% | −20pp | $34,326 / $32,315 |
+
+- Match: 1/5 runs (Run 3). Others off by exactly 20pp (one agent each). Total error 80pp — same as Attempt 4 from da4cbf9. Results reproducible and consistent across commits.
+- HT cost ~$0 (D9 swap formula change still present; not reverted here)
+- Auditor: results "look intuitively better than what is currently in the primer"
+
+**All prior findings confirmed at ba544b1** — B2, B3, B4, D7, D8, D9, F4 all persist (code untouched).
 
 ---
 
