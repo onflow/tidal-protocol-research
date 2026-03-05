@@ -8,10 +8,12 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 
 **Active commit:** `ba544b1` — branch `alex/sim-validation_commit-ba544b1` (one carry-over commit `f5fd2f5` ahead).
 
+**Primer timeline (verified):** Google Docs version history shows the Primer already included Figure 2 and most §4 figures by 2025-10-07. Code commits `684c007`–`48a9ff2` (2025-09-25 to 2025-09-29) introduced post-delivery changes that break reproduction. Figures were generated from code at or before 2025-10-07, but no committed version reproduces them.
+
 **Prior analysis (da4cbf9, completed):**
 - Branch: `alex/sim-validation_commit-da4cbf9`
 - Artifacts: `sims-review_commit-da4cbf9/` (8 analysis docs), `results_commit-da4cbf9/` (all run outputs)
-- Summary: 8 Primer §4 figures mapped; `balanced_scenario_monte_carlo.py` F4 root-caused and fixed (4/5 AAVE survival matched); core formulas verified; slippage discrepancy root-caused (D9+B3+B4); pre-existing bugs B2/B3/B4; post-delivery changes D7/D8/D9
+- Summary: 8 Primer §4 figures mapped; `balanced_scenario_monte_carlo.py` F4 root-caused and fixed (1/5 AAVE survival exact match, others ±20pp); core formulas verified; slippage discrepancy root-caused (D9+B3+B4); pre-existing bugs B2/B3/B4; post-delivery changes D7/D8/D9. No committed code version fully reproduces the Primer.
 
 **ba544b1 work plan:**
 1. Diff-driven triage: `git diff da4cbf9..ba544b1` → classify prior findings as addressed / untouched / indeterminate
@@ -121,7 +123,7 @@ Auditor-initiated investigation of ~430× slippage discrepancy between Primer fi
 
 **Initial hypothesis (fee bypass) revised after git history cross-check.** Auditor directed two-step approach: (i) identify post-Primer changes causing discrepancy, (ii) catalog pre-existing bugs separately.
 
-**D9 — Swap formula change (category i):** Commit `48a9ff2` (2025-09-29, 4 days after `hourly_test_with_rebalancer.py` was added) replaced `get_amount0_delta` (Q96 integer math) with `get_amount0_delta_economic` (floating-point) for YT→MOET output in `compute_swap_step`. The original integer formula had ~0.25% truncation loss on concentrated stablecoin positions (producing ~$2 slippage per $842 trade). The replacement gives near-1:1 output (~$0.005 slippage). Primer generated in the 4-day window before this change.
+**D9 — Swap formula change (category i):** Commit `48a9ff2` (2025-09-29) replaced `get_amount0_delta` (Q96 integer math) with `get_amount0_delta_economic` (floating-point) for YT→MOET output in `compute_swap_step`. The original integer formula had ~0.25% truncation loss on concentrated stablecoin positions (producing ~$2 slippage per $842 trade). The replacement gives near-1:1 output (~$0.005 slippage). The change post-dates `1c9fce8` (2025-09-23), which is the last commit where the formula has the form consistent with the Primer's slippage magnitudes — but no committed version fully reproduces the Primer's numbers. Exact Primer generation date unknown.
 
 **B3 — Fee bypass (category ii, pre-existing):** `uniswap_v3_math.py:1282` omits `fee_amount` from `amount_specified_remaining` update. Present since swap function was first written. Causes fee to be re-swapped in subsequent loop iterations. Impact masked by integer truncation in original formula; amplified by floating-point formula.
 

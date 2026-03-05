@@ -8,6 +8,9 @@
 **Goal:** Map all figures from Primer section "4. Validation and Performance Analysis" to simulation scenarios  
 **Method:** PDF text extraction, visual inspection of provided images, code tracing of chart-generation functions, cross-reference with `reports/` markdown whitepapers
 
+### Primer Provenance
+
+Google Docs version history (verified by auditor, 2026-03-04) shows the very first Primer version was stored on **2025-10-07**. It already contains Figure 2 and the majority of other §4 figures. The code underwent significant changes between 2025-09-25 and 2025-09-29 (commits `684c007`–`48a9ff2`) that break reproduction of the Primer's values. No committed code version seem to reproduce the Primer's exact numbers — the figures were likely generated from an uncommitted or intermediate state.
 
 ---
 
@@ -34,10 +37,10 @@ Section 4 contains **8 images** drawn from **3 distinct simulation scripts**. Th
 **Config** (`ComprehensiveComparisonConfig`, line 184):
 - 5 scenarios × 5 agents = 25 agents total; all "Balanced" (same params, different RNG seeds)
 - `initial_hf_range: (1.25, 1.45)`, `target_hf: 1.1`
-- BTC: `$100,000 → $76,342.50` (−23.66%) over 60 min — **original config; see D7 for post-delivery tampering**
+- BTC: `$100,000 → $76,342.50` (−23.66%) over 60 min — **original config; see D7 for silent change in `684c007`**
 
 
-**Reproduction attempt (2026-02-27):** Running the script at its [**current** commit \[10fd7ad\]](https://github.com/onflow/tidal-protocol-research/tree/10fd7ad4d197cb8b4bd8b8cf2c5cd17db04a9ef6) (setting config `btc_final_price = 90_000`, i.e. only −10% decline) produces 100% survival for **both** HT and AAVE, with near-zero costs. The scenario is too mild to trigger any AAVE liquidations. This is because the config was silently altered post-delivery (see D7).
+**Reproduction attempt (2026-02-27):** Running the script at its [**current** commit \[10fd7ad\]](https://github.com/onflow/tidal-protocol-research/tree/10fd7ad4d197cb8b4bd8b8cf2c5cd17db04a9ef6) (setting config `btc_final_price = 90_000`, i.e. only −10% decline) produces 100% survival for **both** HT and AAVE, with near-zero costs. The scenario is too mild to trigger any AAVE liquidations. This is because `btc_final_price` was silently altered in commit `684c007` (see D7).
 
 **Discrepancy:** The PDF text (p.11) claims AAVE average cost of **\$53,000** but the chart shows **~\$32,000–\$33,000**. The \$53,000 figure appears in the prose of `reports/High_Tide_vs_AAVE_Executive_Summary_Clean.md` as well, but the same report embeds this chart. The prose figure (\$53k) is not reproducible from `balanced_scenario_monte_carlo.py` outputs at any known config version. Likely originates from an uncommitted run with different parameters (e.g., higher initial debt or more severe decline).
 
@@ -199,7 +202,7 @@ No simulation in the repository uses this HF distribution. `balanced_scenario_mo
 
 **Partial fix (2026-02-27):** `balanced_scenario_monte_carlo.py` import fixed (removed dead `target_health_factor_analysis` import; runs with `PYTHONPATH=.`). `comprehensive_ht_vs_aave_analysis.py` still has same dead import on line 33–35.
 
-### D7: Post-delivery config change ⚠️ breaking results reported in FCM Primer
+### D7: Config change (`684c007`, 2025-09-25) ⚠️ breaking results reported in FCM Primer
 
 **Commit:** [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26) makes single change in `balanced_scenario_monte_carlo.py` (line 204) while moving file from repo root to `sim_tests/`:
 
@@ -209,7 +212,7 @@ No simulation in the repository uses this HF distribution. `balanced_scenario_mo
 ```
 
 **Facts:**
-- The original value (\$76,342.50, −23.66%) matches the Primer PDF §4.2 text and produces the AAVE survival rates (40–80%) visible in the contractor-delivered `Figure 2: Performance Matrix Heatmap` (Primer)
+- The original value (\$76,342.50, −23.66%) matches the Primer PDF §4.2 stated scenario and is necessary to produce AAVE liquidations in the 40–80% survival range. No committed code version reproduces the Primer's exact survival pattern.
 - The new value (\$90,000, −10%) is too mild to trigger any AAVE liquidations with HF 1.25–1.45 agents (lowest HF after decline: `1.25 × 0.9 ≈ 1.125`, well above liquidation threshold 1.0)
 - The comment was changed to "25.00% decline" which is also factually wrong for \$100k → \$90k (actual: 10%)
 - This is the **only diff** between the two file versions; no other config was altered
@@ -253,7 +256,7 @@ Items #2–#4 are substantive economic changes that affect simulation outcomes, 
 
 </details>
 
-### D9: Post-Primer swap formula change ⚠️ breaking §4.3 slippage figures
+### D9: Swap formula change (`48a9ff2`, 2025-09-29) ⚠️ breaking §4.3 slippage figures
 
 **Root cause of the ~430× slippage discrepancy**, confirmed by git history.
 <details>
@@ -277,7 +280,7 @@ This commit replaced the standard Uniswap V3 integer output formula with a float
 
 
 
-**Timeline:** `hourly_test_with_rebalancer.py` was added in `684c007` (2025-09-25). The Primer's §4.3 slippage figures (\$2.14 mean) were generated in the 4-day window before `48a9ff2` (2025-09-29), using the **original** `get_amount0_delta` formula.
+**Timeline:** The Primer's §4.3 slippage figures (\$2.14 mean) are roughly in line with the **original** `get_amount0_delta` formula, which was present up to `1c9fce8` (2025-09-23). Commit `48a9ff2` (2025-09-29) replaced it. No committed code version fully reproduces the Primer's numbers — this timeline only constrains when the swap formula was changed, not when the Primer was generated.
 
 </details></br>
 
@@ -290,7 +293,7 @@ This commit replaced the standard Uniswap V3 integer output formula with a float
 | `get_amount0_delta` (original, Q96 integer) | ~\$840 | ~\$2.14 | Primer values |
 | `get_amount0_delta_economic` (current, float) | ~\$841.99 | ~\$0.005 | Current sim output |
 
-**Reproducing Primer Figures:** Revert the `compute_swap_step` change from `48a9ff2` — replace `get_amount0_delta_economic` with `get_amount0_delta` for the `not zero_for_one` output path. This restores the Primer's slippage behavior.
+**Approaching Primer Figures:** Revert the `compute_swap_step` change from `48a9ff2` — replace `get_amount0_delta_economic` with `get_amount0_delta` for the `not zero_for_one` output path. This restores the standard Uniswap V3 formula and produces slippage in the range of the Primer's values (~$2 per trade), though no committed version has been shown to reproduce the Primer's exact numbers.
 
 **Note on the "5.66% efficiency loss" claim** ([uniswap_v3_math.py:335](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/e72d802ff8e45ef623fe8f2da8bc958f85613354/tidal_protocol_sim/core/uniswap_v3_math.py#L335-L337); claim unsubstantiated by author): The commit comment overstates the effect [AI conclusion from 'Mechanism' discussion above]. For the §4.3 pool parameters (\$500k, 95% concentration, 0.05% fee), the actual integer truncation loss is ~0.25%, not 5.66%. The 5.66% figure likely came from a different test case (e.g., smaller pool, larger trades, or different concentration).
 
@@ -308,7 +311,7 @@ This commit replaced the standard Uniswap V3 integer output formula with a float
 + state['amount_specified_remaining'] -= (amount_in + fee_amount)  # Uniswap V3 ref: amountIn + feeAmount
 ```
 
-**Pre-existing:** This bug was present since the swap function was first written (verified at `684c007` and all prior commits). The Primer figures were generated WITH this bug active.
+**Pre-existing:** This bug was present since the swap function was first written (verified at `684c007` and all prior commits). It is present in every committed version, so any run from committed code would include it.
 
 **Interaction with D9:** The fee bypass causes each swap step's un-deducted fee to be re-swapped in subsequent iterations (geometric series converging in 2–3 iterations). With the original `get_amount0_delta`, each re-swapped fee amount also suffers the ~0.25% integer truncation, so the net effect is small (~\$0.001 additional slippage). With the current `get_amount0_delta_economic`, the re-swapped fee converts at near-1:1, amplifying the near-zero slippage effect. In either case, the 0.05% swap fee is not properly retained by the pool.
 
@@ -333,11 +336,11 @@ Each agent rebalancing appends **3 entries** to `engine.rebalancing_events`:
 
 | Image | Script | Confidence | Limiting factor |
 |-------|--------|------------|-----------------|
-| "Figure 2: Performance Matrix Heatmap" | `balanced_scenario_monte_carlo.py` | **High** | Visual + code match with **original** config (pre-D7); \$53k prose discrepancy (D1); current committed config cannot reproduce (D7) |
+| "Figure 2: Performance Matrix Heatmap" | `balanced_scenario_monte_carlo.py` | **High** | Visual + code roughly aligned with **original** config (pre-D7); \$53k prose discrepancy (D1); current committed config cannot reproduce (D7) |
 | "Figure 5: Time Series Evolution" | `comprehensive_ht_vs_aave_analysis.py` | **High** | BTC price (\$76,342) + scenario names confirm source; import fix needed (D6) |
 | "Pool Price Evolution (top panel)" | `hourly_test_with_rebalancer.py` | **Very High** | 10/10 parameter match; visual match |
 | "Pool Price Evolution (bottom panel)" | `hourly_test_with_rebalancer.py` | **Very High** | Same output file |
-| "Agent Rebalancing Analysis" | `hourly_test_with_rebalancer.py` | **High** (source attribution) / **Low** (reproducibility) | Source script, chart function, and layout confirmed. Slippage ~430× off due to post-Primer swap formula change (D9, commit `48a9ff2`). Rebalance amounts match within 6%. Reproducible by reverting D9. |
+| "Agent Rebalancing Analysis" | `hourly_test_with_rebalancer.py` | **High** (source attribution) / **Low** (reproducibility) | Source script, chart function, and layout confirmed. Slippage ~430× off due to swap formula change (D9, commit `48a9ff2`). Rebalance amounts close (~6% off). Reverting D9 would restore slippage to the range of the Primer's values. |
 | "BTC Price Decline Over Time" | `hourly_test_with_rebalancer.py` | **Very High** | Linear \$100k→\$50k exactly matches config |
 | "Agent Health Factor Evolution" | `hourly_test_with_rebalancer.py` | **Low** | Threshold lines match but sawtooth absent; only 2 data points due to D8 |
 | "Yield Token Holdings Over Time" | `hourly_test_with_rebalancer.py` | **Low** | Linear instead of staircase; same D8 root cause |
@@ -348,5 +351,5 @@ Each agent rebalancing appends **3 entries** to `engine.rebalancing_events`:
 |--------|-----------|----------------------|-------------------------------|-------|
 | `balanced_scenario_monte_carlo.py` | Yes (after import fix) | **No** — BTC price silently changed (D7) | **No** — 100/100% survival, ~$0 costs (expected: 100% vs 64%, $22 vs $32k) | Revert line 201 to `76_342.50` (restoring the configuration prior to breaking commit [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26)) |
 | `comprehensive_ht_vs_aave_analysis.py` | **No** — dead import (D6) | Yes | Not yet tested | Needs same import fix as `balanced_scenario_monte_carlo.py` |
-| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | **Partial** — missing `agent_snapshot_frequency_minutes` (D8); post-Primer swap formula (D9) | **Partial** — 2/6 panels match (BTC, pool price); 1/6 partially matches (rebalance amounts OK, slippage ~430× off due to D9); 3/6 fail (HF, YT, net position due to D8) | Need D8 fix + D9 revert (`48a9ff2` swap formula in `compute_swap_step`). Pre-existing bugs B3 (fee bypass) and B4 (triple-recording) should be fixed separately. |
+| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | **Partial** — missing `agent_snapshot_frequency_minutes` (D8); swap formula changed (D9) | **Partial** — 2/6 panels match (BTC, pool price); 1/6 partially matches (rebalance amounts OK, slippage ~430× off due to D9); 3/6 fail (HF, YT, net position due to D8) | Need D8 fix + D9 revert (`48a9ff2` swap formula in `compute_swap_step`). Pre-existing bugs B3 (fee bypass) and B4 (triple-recording) should be fixed separately. |
 

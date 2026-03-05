@@ -46,7 +46,7 @@ self.btc_final_price = 90_000.0  # 25.00% decline (consistent with previous anal
 self.btc_final_price = 76_342.50  # 23.66% decline (original value before 684c007)
 ```
 
-**Rationale:** Commit `684c007` (2025-09-25) silently changed this value while moving the file. The comment is wrong on both counts — 90,000 is a 10% decline from 100,000, not 25%. The original value `76_342.50` matches the Primer's stated scenario (BTC −23.66%). Without this fix: BTC drop is too mild to trigger any AAVE liquidations → 100/100% survival across all runs.
+**Rationale:** Commit `684c007` (2025-09-25) silently changed this value while moving the file. The comment is wrong on both counts — 90,000 is a 10% decline from 100,000, not 25%. The original value `76_342.50` is consistent with the Primer's stated scenario (BTC −23.66%). Without this fix: BTC drop is too mild to trigger any AAVE liquidations → 100/100% survival across all runs.
 
 Details: [`FCM_PRIMER_FIGURE_MAPPING.md §D7`](../sims-review_commit-da4cbf9/FCM_PRIMER_FIGURE_MAPPING.md).
 
@@ -101,42 +101,31 @@ Details: [`DISCREPANCY-ANALYSIS §F2, §F6, §F7, Attempt 4`](../sims-review_com
 
 ---
 
-## Results
+### Edit 5 — Revert swap formula to standard Uniswap V3 (D9)
+**File:** `tidal_protocol_sim/core/uniswap_v3_math.py` (`compute_swap_step`, lines 335–346)
 
-Config: `ComprehensiveComparisonConfig` — 5 scenarios × 5 agents, BTC $100k → $76,342.50 (−23.66%), 60 min.
+```python
+# Before: floating-point "economic" formula for YT→MOET output
+if exact_in and amount_remaining_less_fee > 0:
+    amount_out = get_amount0_delta_economic(
+        sqrt_price_current_x96, sqrt_price_next_x96, liquidity, amount_remaining_less_fee
+    )
+else:
+    amount_out = get_amount0_delta(
+        sqrt_price_current_x96, sqrt_price_next_x96, liquidity, False
+    )
 
-### AAVE Survival Rate
+# After: standard Uniswap V3 Q96 integer formula for all cases
+amount_out = get_amount0_delta(
+    sqrt_price_current_x96, sqrt_price_next_x96, liquidity, False
+)
+```
 
-| Run | Sim | Primer | Δ |
-|-----|-----|--------|---|
-| 1 | 60% | 40% | +20pp |
-| 2 | 40% | 60% | −20pp |
-| 3 | **80%** | **80%** | **0 ✓** |
-| 4 | 40% | 60% | −20pp |
-| 5 | 60% | 80% | −20pp |
+**Rationale:** Commit `48a9ff2` (2025-09-29) replaced the standard Uniswap V3 output formula (`get_amount0_delta`, Q96 integer math) with a floating-point shortcut (`get_amount0_delta_economic`) for YT→MOET swaps. The shortcut computes `output = input / (1 + input/(L×√P))` directly, bypassing the two-step integer pipeline (amount→price→output) and its associated truncation. This collapses HT rebalancing slippage from ~$2 per trade to ~$0.005, making HT costs appear zero.
 
-- HT survival: 100% all runs ✓
-- Exact match: Run 3 only. Others off by exactly 20pp (one agent each). Total error: 80pp.
-- This is the best achievable result from committed code — identical to da4cbf9 Attempt 4.
-- Remaining gap: AAVE agent HFs are deterministic at this RNG position and cannot match the Primer's (40%, 60%, 80%, 60%, 80%) pattern without either a different seed, a different HF draw range, or a code path that consumes a different number of RNG draws before AAVE agent creation. See [`DISCREPANCY-ANALYSIS §F2`](../sims-review_commit-da4cbf9/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md) for the mathematical proof that no single liquidation threshold can explain the Primer's pattern given the HFs produced by this code.
+The standard formula IS the real Uniswap V3 formula — same Q96 fixed-point arithmetic as `SqrtPriceMath.sol` on-chain, including round-down-for-output behavior. The "5.66% efficiency loss" cited in the original comment is not a bug — it reflects AMM price impact and integer rounding that real swaps incur. The magnitude is likely amplified by the simulation's pool scaling (smaller liquidity values than real-world pools), but the direction is correct: swaps have non-zero friction. The economic formula eliminates this friction entirely, making the HT vs AAVE cost comparison non-representative.
 
-### AAVE Cost per Liquidation
-
-| Run | Sim | Primer | Δ |
-|-----|-----|--------|---|
-| 1 | $34,678 | $32,956 | +5.2% |
-| 2 | $34,677 | $32,884 | +5.5% |
-| 3 | $34,516 | $32,946 | +4.8% |
-| 4 | $34,719 | $32,931 | +5.4% |
-| 5 | $34,326 | $32,315 | +6.2% |
-
-Residual ~+5%: explained by collateral factor change (0.80 → 0.85 in commit `2fd742d`). A higher collateral factor means more debt is borrowed at a given HF, so 50% debt repayment seizes proportionally more BTC.
-
-### HT Cost per Agent
-
-~$0 across all runs vs Primer's $19–22. This is D9 (commit `48a9ff2`, 2025-09-29): `compute_swap_step` was changed from `get_amount0_delta` (Q96 integer math, ~$2 slippage per $842 trade) to `get_amount0_delta_economic` (floating-point, ~$0.005 slippage). The Primer was generated in the 4-day window before this change. Reverting D9 is not applied here — tracked as a separate open item.
-
-Full provenance: [`FCM_PRIMER_FIGURE_MAPPING.md §D9`](../sims-review_commit-da4cbf9/FCM_PRIMER_FIGURE_MAPPING.md).
+Details: [`FCM_PRIMER_FIGURE_MAPPING.md §D9`](../sims-review_commit-da4cbf9/FCM_PRIMER_FIGURE_MAPPING.md).
 
 ---
 
@@ -148,11 +137,17 @@ Full provenance: [`FCM_PRIMER_FIGURE_MAPPING.md §D9`](../sims-review_commit-da4
 | 2. `btc_final_price` restore | `balanced_scenario_monte_carlo.py` | Config correction (D7) | No | **Yes** (zero liquidations otherwise) |
 | 3. Direct debt repayment | `aave_agent.py` | Bug fix (F4) | No | **Yes** (3× liquidations, 2.4× cost otherwise) |
 | 4. Simulation order swap | `balanced_scenario_monte_carlo.py` | Ordering fix | No | **Yes** (reduces survival error 0/5 → 1/5) |
+| 5. Revert swap formula | `uniswap_v3_math.py` | Formula revert (D9) | No | **Yes** (HT cost $0 vs $19–22 otherwise) |
+
+## Results
+
+*Pending re-run after Edit 5. Prior results (Edits 1–4 only) showed HT cost ~$0 due to D9.*
+
+---
 
 ## Known Remaining Gaps
 
 | Gap | Root cause | Status |
 |-----|-----------|--------|
-| HT cost ~$0 vs Primer $19–22 | D9: swap formula changed post-Primer (`48a9ff2`) | Open — requires reverting `compute_swap_step` |
 | AAVE survival 1/5 match | F2: HFs deterministic at current RNG position; no committed code version produces Primer's pattern | Open — likely requires uncommitted seed/config |
 | AAVE cost +5% residual | Collateral factor 0.80→0.85 (`2fd742d`) | Known, quantified, not fixed |

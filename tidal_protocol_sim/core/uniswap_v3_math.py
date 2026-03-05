@@ -331,19 +331,16 @@ def compute_swap_step(
             amount_in = get_amount1_delta(
                 sqrt_price_current_x96, sqrt_price_next_x96, liquidity, True
             )
-            
-            # CRITICAL FIX: Use economic formula instead of broken Uniswap V3 formula
-            # This fixes the 5.66% efficiency loss
-            if exact_in and amount_remaining_less_fee > 0:
-                # Use the economically correct relationship for output calculation
-                amount_out = get_amount0_delta_economic(
-                    sqrt_price_current_x96, sqrt_price_next_x96, liquidity, amount_remaining_less_fee
-                )
-            else:
-                # Fallback to original formula for exact output or edge cases
-                amount_out = get_amount0_delta(
-                    sqrt_price_current_x96, sqrt_price_next_x96, liquidity, False
-                )
+            # Standard Uniswap V3 formula (Q96 integer math, round-down-for-output). Two-step pipeline
+            # (amount_in → sqrt_price_next → amount_out) loses precision at each integer truncation,
+            # producing less output than an idealized continuous-math. On-chain, this loss is sub-cent
+            # (Q96 ≈ 29 decimal digits); here, the simulation's smaller liquidity values amplify it to
+            # ~0.2% per swap. We retain the standard formula because (a) it matches real Uniswap V3
+            # (see `SqrtPriceMath.sol`), and (b) zero-friction swaps would make the HT-vs-AAVE cost
+            # comparison non-representative.
+            amount_out = get_amount0_delta(
+                sqrt_price_current_x96, sqrt_price_next_x96, liquidity, False
+            )
         
         # Cap output amount for exact output swaps
         if not exact_in and amount_out > -amount_remaining:

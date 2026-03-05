@@ -9,6 +9,12 @@ Last updated: 2026-03-03
 
 ---
 
+## Primer Provenance
+
+**Primer version history (verified by auditor, 2026-03-04):** Google Docs version history confirms a Primer version from 2025-10-07 already containing Figure 2 and the majority of §4 figures. Code commits `684c007`–`48a9ff2` (2025-09-25 to 2025-09-29) introduced changes that break reproduction. No committed code version reproduces the Primer's numbers.
+
+---
+
 ## Protocol-Level Conclusions (commit-independent)
 
 ### Validated
