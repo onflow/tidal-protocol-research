@@ -4,23 +4,30 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 
 ## Audit State (living summary — update each session)
 
-**Phase:** Analyzing `ba544b1` (UnitZero's fixes). Diff triage pending.
+**Active commit:** `ba544b1` — branch `alex/sim-validation_commit-ba544b1` (5 commits ahead: audit artifacts, memory, Figure 2 reproduction, D9 integer formula restore, docstring fix).
 
-**Active commit:** `ba544b1` — branch `alex/sim-validation_commit-ba544b1` (one carry-over commit `f5fd2f5` ahead).
+**Per-simulation status:**
 
-**Primer timeline (verified):** Google Docs version history shows the Primer already included Figure 2 and most §4 figures by 2025-10-07. Code commits `684c007`–`48a9ff2` (2025-09-25 to 2025-09-29) introduced post-delivery changes that break reproduction. Figures were generated from code at or before 2025-10-07, but no committed version reproduces them.
+| Simulation | Phase | Notes |
+|------------|-------|-------|
+| `balanced_scenario_monte_carlo.py` | **Update & extension** | Analysis complete (→ `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`). Bug fixes in original; new code in `sim_adaptations/`. |
+| `hourly_test_with_rebalancer.py` | Analysis | Ran mode 1 & 3 (→ `POOL_REBALANCER_36H_COMPARISON.md`). Open: algo rebalancer $0 profit, off-by-one in range(2160). |
+| `flash_crash_simulation.py` | Analysis | Summary done (→ `FLASH_CRASH_SIMULATION_SUMMARY.md`). Open: infinite leverage loop (`moet_debt` reset). |
+| `full_year_sim.py` | Analysis | Discrepancy check false positive root-caused (→ `DISCREPANCY-ANALYSIS_full_year_sim.md`). |
+| Others (§4.3 panels, etc.) | Not started | Snapshot frequency default (1440min) + chart x-axis bug blocks reproduction. |
+
+**Policy:** New/extended sim code goes in `sim_adaptations/`. Existing sims receive only bug fixes, no substantial modifications.
+
+**Primer timeline (verified):** Google Docs version history shows the Primer already included Figure 2 and most §4 figures by 2025-10-07. Code commits `684c007`–`48a9ff2` (2025-09-25 to 2025-09-29) introduced post-delivery changes that break reproduction. No committed code version reproduces them.
 
 **Prior analysis (da4cbf9, completed):**
 - Branch: `alex/sim-validation_commit-da4cbf9`
 - Artifacts: `sims-review_commit-da4cbf9/` (8 analysis docs), `results_commit-da4cbf9/` (all run outputs)
-- Summary: 8 Primer §4 figures mapped; `balanced_scenario_monte_carlo.py` F4 root-caused and fixed (1/5 AAVE survival exact match, others ±20pp); core formulas verified; slippage discrepancy root-caused (D9+B3+B4); pre-existing bugs B2/B3/B4; post-delivery changes D7/D8/D9. No committed code version fully reproduces the Primer.
+- Summary: 8 Primer §4 figures mapped; AAVE liquidation cascading bug root-caused and fixed (→ `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`); core formulas verified; slippage discrepancy root-caused (swap formula change + fee bypass + triple-recording); pre-existing bugs (fee bypass, triple-recording, infinite leverage); post-delivery changes (btc_final_price, snapshot frequency, swap formula).
 
-**ba544b1 work plan:**
-1. Diff-driven triage: `git diff da4cbf9..ba544b1` → classify prior findings as addressed / untouched / indeterminate
-2. Verify runnability of sim scripts
-3. Check persistence of pre-existing bugs (B2, B3, B4)
-4. Check if post-delivery changes (D7, D8, D9) were reverted or differently addressed
-5. Re-run key reproductions and compare
+**ba544b1 analysis (completed):**
+- Diff purely organizational (file moves); all prior findings persist unchanged.
+- Figure 2 reproduced with same fix set: 1/5 runs exact match, others ±20pp.
 
 ---
 
@@ -270,6 +277,38 @@ Claimed to be a "runnable commit" that could reproduce Primer results. Disproven
 - Auditor: results "look intuitively better than what is currently in the primer"
 
 **All prior findings confirmed at ba544b1** — B2, B3, B4, D7, D8, D9, F4 all persist (code untouched).
+
+---
+
+## 2026-03-10: Phase Transition — Simulation Update & Extension
+
+**Phase transition** for `balanced_scenario_monte_carlo.py`: moving from analysis/reproduction to update & extension.
+- Per-simulation phase tracking introduced in Audit State (initially over-generalized as global; corrected by auditor)
+- New code targets `sim_adaptations/`; existing sims receive only bug fixes
+- Memory system reviewed: all directives intact, no drift, no anomalies
+
+**Corrections received:**
+1. Phase scope: per-simulation, not global → Audit State restructured with per-sim table
+2. Shorthand IDs (F4, B2, etc.) are scoped to their analysis doc → replaced with descriptive text + doc references in Audit State
+3. Living summary stale (`f5fd2f5` one commit ahead → actually 5 ahead) → updated
+
+**Patterns extracted:**
+- "Scoped IDs need source context" → `WORKING_STYLE.md § Document Authoring`
+- "Generalization awareness" reinforced (+1, now 2)
+
+---
+
+## 2026-03-10b: Flash Crash Review & Doc Cleanup
+
+Reviewed `run_flash_crash.py` scenario and existing flash crash analysis.
+
+**Fixes:**
+- `run_flash_crash.py` menu strings: YT crash magnitudes were stale (35/50/70% → corrected to 20/32/45%)
+- `SIMULATION_COMPARISON_monte_carlo_vs_flash_crash.md`: 4 ambiguities fixed (HF triple notation, BTC endpoint D7 context, system debt per-protocol, date)
+
+**Technical insight — flash crash agent divergence:** 150 agents start with identical parameters, but diverge through: (1) processing order × pool liquidity (primary — $500k MOET:YT pool is small relative to aggregate demand), (2) oracle wick timing amplifying queue effects, (3) BTC recovery noise propagating through already-diverged states. Unverified: whether per-agent random draws or agent-order shuffling add further divergence.
+
+**Direction extracted:** "Results over process" → `WORKING_STYLE.md § Document Authoring`
 
 ---
 

@@ -38,6 +38,9 @@ On-demand provenance record. Tracks structural changes to the memory system and 
 | 2026-03-02 | Clean up checkout artifacts | Added | After `git checkout <commit> -- <path>`, diff against old commit before deleting |
 | 2026-03-03 | Comment handling | Reinforced (+1) | Violated during aave_agent.py F4 fix — replaced code block without enumerating original comments. Added pre-flight check: enumerate comments before writing replacement. Now at 3. |
 | 2026-03-03 | Minimal invasiveness | Reinforced (+1) | Same incident. "Replace the broken code" mindset = clean-slate thinking. Now at 4. |
+| 2026-03-10 | New code in `sim_adaptations/` | Added | Phase transition: new/extended sim code → `sim_adaptations/`; existing sims → bug fixes only |
+| 2026-03-10 | Scoped IDs need source context | Added | IDs (F4, B2, etc.) only unique within their analysis doc; cite with descriptive text + source reference elsewhere |
+| 2026-03-10 | Generalization awareness | Reinforced (+1) | Over-generalized per-sim phase as global. Now at 2. |
 
 ## Structural Changes
 
@@ -59,6 +62,7 @@ On-demand provenance record. Tracks structural changes to the memory system and 
 | 2026-02-28 | Session-start health check added to Active Retrieval | Brief evaluation alongside reading: unfamiliar items? size changes? stale entries? |
 | 2026-02-28 | "Split" added to Evolution Operations | Prefer splitting to topic files over pruning when content grows |
 | 2026-03-03 | Commit transition: da4cbf9 → ba544b1 | CONCLUSIONS.md restructured (commit-scoped sections, Prior Art table). SESSION_LOG Audit State updated. TECHNICAL.md tagged with code ref scope. Zero-hypothesis carry-forward model adopted. |
+| 2026-03-10 | Phase transition: analysis → sim extension | New code in `sim_adaptations/`; existing sims bug-fix only. Audit State updated. Directive added to WORKING_STYLE.md. |
 
 ## Meta-Learnings
 

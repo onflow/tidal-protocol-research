@@ -109,9 +109,13 @@ tidal_protocol_sim/results_commit-*
 
 
 
+# Large data files
+sim_adaptations/data/btcusd_1-min_data.csv
+
 # Cursor AI — ignore generated/cache files but keep memory and rules
 .cursor/*
 !.cursor/rules/
 .cursor/rules/*
 !.cursor/rules/memory/
 !.cursor/rules/*.mdc
+

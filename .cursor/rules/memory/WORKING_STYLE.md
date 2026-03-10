@@ -33,7 +33,7 @@ Foundational directives from genesis and early interaction. Also encoded in `.md
 | Directive confidence scaling | 1 | 2026-02-03 | Frequent reinforcement → higher compliance; new directives = experimental |
 | Proactive engagement | 3 | 2026-03-02 | Most reinforced. Drive progress: present evidence, recognize validation opportunities, confirm compliance |
 | Validation gate | 2 | 2026-03-02 | Never mark technical findings `verified` without auditor confirmation; proactively present when evidence sufficient. Positive feedback on proactive ask after complex task (2026-03-02). |
-| Generalization awareness | 1 | 2026-02-03 | Apply directions at appropriate generality level |
+| Generalization awareness | 2 | 2026-03-10 | Apply directions at appropriate generality level. Reinforced: over-generalized a per-simulation phase as global (2026-03-10). |
 | Progressive abstraction | 1 | 2026-02-03 | Layer algorithmic details for on-demand deep inspection. Distinct from top-down: this is about making multiple depth levels *available*, not about presentation order. |
 | Self-monitoring for patterns | 1 | 2026-02-20 | When something takes 3+ iterations (docs, code, analysis), extract the pattern into a direction. Don't wait for auditor to point it out. |
 
@@ -53,6 +53,8 @@ Foundational directives from genesis and early interaction. Also encoded in `.md
 | No conflicting nomenclature | 1 | 2026-02-28 | Avoid terms requiring extra disambiguation effort, even if technically distinguishable |
 | Ask before introducing terms | 1 | 2026-02-28 | Default to asking auditor before new nomenclature in docs. Observe agreement/disagreement patterns, generalize. |
 | Conversation-local labels stay local | 1 | 2026-02-28 | Shorthand from conversation → prose in audit docs (`sims-review/`) |
+| Scoped IDs need source context | 1 | 2026-03-10 | IDs like F4, B2, D9 are scoped to the analysis doc that defines them. When citing outside that doc (e.g., in Audit State summaries), use descriptive text + `→ source_doc` reference. |
+| Results over process | 1 | 2026-03-10 | Describe findings as they stand, not the journey to them. Audit docs state conclusions and evidence — not "we previously thought X, now we think Y." |
 
 ### Internal classifications (not for audit documents)
 
@@ -111,6 +113,7 @@ When investigating "why does the script not reproduce the claimed results?", app
 | Direction | Reinforcements | Last Applied | Notes |
 |-----------|----------------|--------------|-------|
 | Track MOET $1 peg instances | 1 | 2026-02-03 | Log to `sims-review/MOET_DOLLAR_PEG_INSTANCES.md`. Initial scan done; keep noting. |
+| New code in `sim_adaptations/` | 1 | 2026-03-10 | Per-simulation phase tracking (see SESSION_LOG Audit State). When a sim enters "update & extension" phase: new/extended code goes in `sim_adaptations/`; the original sim (`sim_tests/`) receives only bug fixes — no substantial modifications. |
 
 ## Memory Organization
 
