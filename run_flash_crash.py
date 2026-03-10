@@ -50,9 +50,9 @@ def main():
     
     # Available scenarios
     scenarios = {
-        "1": ("mild", "35% YT drop, 12% BTC drop, 60% liquidity reduction"),
-        "2": ("moderate", "50% YT drop, 20% BTC drop, 70% liquidity reduction"),
-        "3": ("severe", "70% YT drop, 25% BTC drop, 80% liquidity reduction")
+        "1": ("mild", "20% YT drop, 12% BTC drop, 60% liquidity reduction"),
+        "2": ("moderate", "32% YT drop, 20% BTC drop, 70% liquidity reduction"),
+        "3": ("severe", "45% YT drop, 25% BTC drop, 80% liquidity reduction")
     }
     
     print("Available scenarios:")
