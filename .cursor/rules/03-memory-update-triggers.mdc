@@ -1,0 +1,22 @@
+---
+description: Triggers inline memory updates when feedback or findings occur during work
+alwaysApply: true
+---
+
+# Memory Update Triggers
+
+After completing each response, before finalizing, check:
+
+1. **Did the auditor give positive or negative feedback?** ("I like X", "that's wrong", corrections)
+   → Update `WORKING_STYLE.md`: increment reinforcement count, add note, or record correction.
+
+2. **Did I create or update an analysis artifact?** (new file in `sims-review_*/`, `sim_adaptations/`, etc.)
+   → Update `SESSION_LOG.md`: new entry or extend current session entry.
+
+3. **Did I surface a new technical finding?** (bug, discrepancy, missing file, behavioral insight)
+   → Decide: `SESSION_LOG.md` (session-scoped), `CONCLUSIONS.md` (cross-session), or `TECHNICAL.md` (domain knowledge).
+
+4. **Did I state a takeaway or principle in conversation text without writing it to a memory file?**
+   → Write it now. Conversation text does not persist.
+
+If any check is positive, include the memory update tool call(s) in the current response. Do not defer to a later turn.

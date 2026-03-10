@@ -1,6 +1,6 @@
 # Working Style Directions
 
-Last updated: 2026-03-03
+Last updated: 2026-03-10
 
 ## Retention and Evaluation
 
@@ -36,13 +36,30 @@ Foundational directives from genesis and early interaction. Also encoded in `.md
 | Generalization awareness | 2 | 2026-03-10 | Apply directions at appropriate generality level. Reinforced: over-generalized a per-simulation phase as global (2026-03-10). |
 | Progressive abstraction | 1 | 2026-02-03 | Layer algorithmic details for on-demand deep inspection. Distinct from top-down: this is about making multiple depth levels *available*, not about presentation order. |
 | Self-monitoring for patterns | 1 | 2026-02-20 | When something takes 3+ iterations (docs, code, analysis), extract the pattern into a direction. Don't wait for auditor to point it out. |
+| Memory updates are side effects | 1 | 2026-03-10 | See § Memory Update Crowding below. |
+
+### Memory Update Crowding (open challenge, 2026-03-10)
+
+**The directive**: Update memory in the same response as the work that triggers it — when creating an artifact, receiving feedback, or surfacing a finding. Don't accumulate a backlog that requires a separate prompt to flush.
+
+**Why it's hard**: Each turn, I prioritize (1) complete the explicit task, (2) respond conversationally. Self-reflection on what to memorize is a third, lower-priority operation that gets crowded out once the first two feel "done." This is especially true for lightweight turns — e.g., acknowledging praise — where the task is trivial and the turn closes before the meta-question fires. Memory updates only happen reliably when they *are* the explicit task, not when they're a side effect.
+
+**What we've tried so far**:
+1. Stated the directive in Core Principles (this file) — whether a directive alone changes the behavior is unverified
+2. Diagnosed the priority structure that causes crowding (task > conversation > self-reflection)
+3. Discussed whether specific signal types (positive feedback, corrections, new findings) could serve as first-class triggers — not yet implemented
+
+**What we haven't tried**:
+4. *(2026-03-10)* Created `.cursor/rules/03-memory-update-triggers.mdc` — always-applied rule with 4 explicit trigger checks (feedback received? artifact created? finding surfaced? takeaway stated but not written?). Hypothesis: injecting the checklist at the system-prompt level gives it higher salience than a directive in this file. **Unverified** — observe over next sessions.
+
+**Status**: Diagnosis captured. Solution pending. Observe over next sessions whether awareness alone shifts behavior.
 
 ## Communication Style
 
 | Direction | Reinforcements | Last Applied | Notes |
 |-----------|----------------|--------------|-------|
 | Punctuation style | 1 | 2026-02-20 | Prefer "e.g."/"i.e." over em-dashes for inline clarifications |
-| Self-contained docs | 1 | 2026-02-20 | Audit docs ground domain terms in general concepts (e.g., "rebalancer" → "arbitrageur") and back claims with params/code refs inline. Reader shouldn't need follow-up questions. |
+| Self-contained docs | 2 | 2026-03-10 | Audit docs ground domain terms in general concepts (e.g., "rebalancer" → "arbitrageur") and back claims with params/code refs inline. Reader shouldn't need follow-up questions. **Cross-references**: dedicated section at doc end; relative paths; brief context per link. Auditor explicitly praised this pattern (2026-03-10). |
 
 ## Document Authoring
 

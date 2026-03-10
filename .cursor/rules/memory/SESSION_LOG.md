@@ -12,7 +12,7 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 |------------|-------|-------|
 | `balanced_scenario_monte_carlo.py` | **Update & extension** | Analysis complete (→ `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`). Bug fixes in original; new code in `sim_adaptations/`. |
 | `hourly_test_with_rebalancer.py` | Analysis | Ran mode 1 & 3 (→ `POOL_REBALANCER_36H_COMPARISON.md`). Open: algo rebalancer $0 profit, off-by-one in range(2160). |
-| `flash_crash_simulation.py` | Analysis | Summary done (→ `FLASH_CRASH_SIMULATION_SUMMARY.md`). Open: infinite leverage loop (`moet_debt` reset). |
+| `flash_crash_simulation.py` | Analysis | Detailed code review + scenario summary done. Runner broken at ba544b1 (import path + stale attribute). Never run. Open: infinite leverage loop (`moet_debt` reset). → `FLASH_CRASH_SIMULATION_SUMMARY.md`, `SIMULATION_COMPARISON_monte_carlo_vs_flash_crash.md` |
 | `full_year_sim.py` | Analysis | Discrepancy check false positive root-caused (→ `DISCREPANCY-ANALYSIS_full_year_sim.md`). |
 | Others (§4.3 panels, etc.) | Not started | Snapshot frequency default (1440min) + chart x-axis bug blocks reproduction. |
 
@@ -309,6 +309,24 @@ Reviewed `run_flash_crash.py` scenario and existing flash crash analysis.
 **Technical insight — flash crash agent divergence:** 150 agents start with identical parameters, but diverge through: (1) processing order × pool liquidity (primary — $500k MOET:YT pool is small relative to aggregate demand), (2) oracle wick timing amplifying queue effects, (3) BTC recovery noise propagating through already-diverged states. Unverified: whether per-agent random draws or agent-order shuffling add further divergence.
 
 **Direction extracted:** "Results over process" → `WORKING_STYLE.md § Document Authoring`
+
+---
+
+## 2026-03-10c: Data Source Mapping & Simulation Comparison
+
+Auditor-requested deep review of both `run_flash_crash.py` and `balanced_scenario_monte_carlo.py` scenarios, plus real-world data usage across all simulations.
+
+**Artifacts created (in `sims-review_commit-ba544b1/`):**
+- `SIMULATION_DATA_SOURCES.md` — maps real-world CSV files to consuming simulations; documents what's synthetic
+- `SIMULATION_COMPARISON_monte_carlo_vs_flash_crash.md` — conceptual comparison of the two simulations
+
+**Findings:**
+- `optimal_range_lookup_corrected.csv` referenced by `pool_rebalancer.py` but **missing from repo** → `FileNotFoundError` if ALM optimal-range code path fires (affects year-long studies + flash crash when pool arbing enabled; Monte Carlo unaffected since `enable_pool_arbing = False`)
+- `dune_query_6227486.csv` (1-min BTC prices, single day) not loaded by any simulation script
+- `run_flash_crash.py` import path broken at ba544b1 (`sim_tests.flash_crash_simulation` → file moved to `sim_tests/archive_tests/`)
+- Flash crash oracle timing offset: BTC crash window (900–925) vs oracle manipulation window (895–920) → 5-min phase where BTC at floor but oracle already recovering (minutes 921–925)
+
+**Working style reinforcement:** Cross-references pattern in audit docs (dedicated section, relative paths, brief context) — auditor explicitly praised.
 
 ---
 
