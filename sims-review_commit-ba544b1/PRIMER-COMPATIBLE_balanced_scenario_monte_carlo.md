@@ -48,7 +48,7 @@ self.btc_final_price = 76_342.50  # 23.66% decline (original value before 684c00
 
 **Rationale:** Commit `684c007` (2025-09-25) silently changed this value while moving the file. The comment is wrong on both counts — 90,000 is a 10% decline from 100,000, not 25%. The original value `76_342.50` is consistent with the Primer's stated scenario (BTC −23.66%). Without this fix: BTC drop is too mild to trigger any AAVE liquidations → 100/100% survival across all runs.
 
-Details: [`FCM_PRIMER_FIGURE_MAPPING.md §D7`](../sims-review_commit-da4cbf9/FCM_PRIMER_FIGURE_MAPPING.md).
+Details: [`FCM_PRIMER_FIGURE_MAPPING.md §D7`](FCM_PRIMER_FIGURE_MAPPING.md).
 
 ---
 
@@ -125,7 +125,7 @@ amount_out = get_amount0_delta(
 
 The standard formula IS the real Uniswap V3 formula — same Q96 fixed-point arithmetic as `SqrtPriceMath.sol` on-chain, including round-down-for-output behavior. The "5.66% efficiency loss" cited in the original comment is not a bug — it reflects AMM price impact and integer rounding that real swaps incur. The magnitude is likely amplified by the simulation's pool scaling (smaller liquidity values than real-world pools), but the direction is correct: swaps have non-zero friction. The economic formula eliminates this friction entirely, making the HT vs AAVE cost comparison non-representative.
 
-Details: [`FCM_PRIMER_FIGURE_MAPPING.md §D9`](../sims-review_commit-da4cbf9/FCM_PRIMER_FIGURE_MAPPING.md).
+Details: [`FCM_PRIMER_FIGURE_MAPPING.md §D9`](FCM_PRIMER_FIGURE_MAPPING.md).
 
 ---
 
@@ -141,7 +141,21 @@ Details: [`FCM_PRIMER_FIGURE_MAPPING.md §D9`](../sims-review_commit-da4cbf9/FCM
 
 ## Results
 
-*Pending re-run after Edit 5. Prior results (Edits 1–4 only) showed HT cost ~$0 due to D9.*
+**All 5 edits applied.** Results in `results_commit-ba544b1/Balanced_Scenario_Monte_Carlo/` reflect a run with all edits on branch `alex/sim-validation_commit-ba544b1`.
+
+| Run | HT Surv | AAVE Surv | HT Cost/agent | AAVE Cost/liq | Primer HT Cost | Primer AAVE Cost |
+|-----|---------|-----------|---------------|---------------|----------------|-----------------|
+| 1   | 100%    | 60%       | $2.18         | $34,678       | $19            | $32,956         |
+| 2   | 100%    | 40%       | $2.92         | $34,677       | $22            | $32,884         |
+| 3   | 100%    | 80%       | $1.32         | $34,516       | $19            | $32,946         |
+| 4   | 100%    | 40%       | $4.00         | $34,719       | $19            | $32,931         |
+| 5   | 100%    | 60%       | $2.03         | $34,326       | $22            | $32,315         |
+
+**Notes:**
+- HT costs include B4 triple-recording inflation (actual cost ≈ reported ÷ 3)
+- HT costs are non-zero (D9 revert working) but $1–4/agent — significantly lower than both the Primer ($19–22) and the old engine at `1c9fce8` ($9–13). The post-`2fd742d` engine changes (leverage check throttling, MOET balance accounting) alter rebalancing behavior beyond just the swap formula, widening the F3 gap.
+- AAVE results identical to prior (pre-D9) run — D9 revert only affects HT swap path
+- AAVE cost ~$34.5k vs Primer ~$32.9k (+5%, explained by collateral factor 0.80→0.85)
 
 ---
 

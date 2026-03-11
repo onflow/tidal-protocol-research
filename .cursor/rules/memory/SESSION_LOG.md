@@ -4,7 +4,7 @@ Technical insights, artifacts, bugs, open questions. Snippets over prose; cross-
 
 ## Audit State (living summary — update each session)
 
-**Active commit:** `ba544b1` — branch `alex/sim-validation_commit-ba544b1` (5 commits ahead: audit artifacts, memory, Figure 2 reproduction, D9 integer formula restore, docstring fix).
+**Active commit:** `ba544b1` — branch `alex/sim-validation_commit-ba544b1` (7 commits ahead of `ba544b1`).
 
 **Per-simulation status:**
 
@@ -327,6 +327,36 @@ Auditor-requested deep review of both `run_flash_crash.py` and `balanced_scenari
 - Flash crash oracle timing offset: BTC crash window (900–925) vs oracle manipulation window (895–920) → 5-min phase where BTC at floor but oracle already recovering (minutes 921–925)
 
 **Working style reinforcement:** Cross-references pattern in audit docs (dedicated section, relative paths, brief context) — auditor explicitly praised.
+
+---
+
+## 2026-03-10d: Remediation Cross-Check & Doc Reorganization
+
+Auditor-initiated verification: which edits from PRIMER-COMPATIBLE analysis are applied in the current code?
+
+**Verification results — all 5 edits confirmed applied:**
+1. Import stub removal: lines 33–34 have comment stub ✓
+2. `btc_final_price = 76_342.50`: line 203 ✓
+3. F4 direct debt repayment: `aave_agent.py` line 204 `actual_debt_repaid = debt_reduction` ✓
+4. Sim order swap: lines 425–431 AAVE first, then HT ✓
+5. D9 revert: `compute_swap_step` lines 341–343 use `get_amount0_delta` (standard formula). Commit `081a011` ✓
+
+**Pre-existing bugs verified still present:**
+- B3: `uniswap_v3_math.py:1279` — `amount_specified_remaining -= amount_in` (still omits `fee_amount`)
+- B4: `high_tide_vault_engine.py` — 3 `rebalancing_events.append` sites (lines 536, 562, 628)
+
+**Results data update:** Results in `results_commit-ba544b1/` are current (all 5 edits applied, including D9 revert). Auditor corrected an earlier misunderstanding that the results predated D9.
+
+**New observation — F3 gap widened:** HT costs with current engine + D9 revert = $1–4/agent. Much lower than old engine at `1c9fce8` ($9–13/agent) or Primer ($19–22). The post-`2fd742d` engine changes (leverage check throttling, MOET balance accounting) alter rebalancing behavior, widening the F3 gap from 1.8× to 5–15×. AAVE results are byte-identical between pre- and post-D9 runs, confirming the D9 change only affects the HT swap path.
+
+**Doc reorganization:**
+- Moved `FCM_PRIMER_FIGURE_MAPPING.md` from `sims-review_commit-da4cbf9/` to `sims-review_commit-ba544b1/`
+- Added Remediation Status table (per-script, per-issue, with fix status)
+- Updated `PRIMER-COMPATIBLE_balanced_scenario_monte_carlo.md` Results section with pre-D9 result table
+- Fixed cross-references (FCM doc moved)
+- Updated `CONCLUSIONS.md` ba544b1 status column for all findings
+
+**Also noted:** `base_case_charts.py` exists in `sim_tests/archive_tests/` — UnitZero's charting utility for the comparison object. Generates charts from results data (BTC price, survival, net APY, health factor, yield strategy, agent performance). ~1069 lines.
 
 ---
 

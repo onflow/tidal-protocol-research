@@ -345,11 +345,36 @@ Each agent rebalancing appends **3 entries** to `engine.rebalancing_events`:
 | "Agent Health Factor Evolution" | `hourly_test_with_rebalancer.py` | **Low** | Threshold lines match but sawtooth absent; only 2 data points due to D8 |
 | "Yield Token Holdings Over Time" | `hourly_test_with_rebalancer.py` | **Low** | Linear instead of staircase; same D8 root cause |
 
-## Reproducibility Status (as of 2026-02-28)
+## Remediation Status (updated 2026-03-10)
 
-| Script | Runnable? | Config matches Primer? | Results reproduced in Primer? | Notes |
-|--------|-----------|----------------------|-------------------------------|-------|
-| `balanced_scenario_monte_carlo.py` | Yes (after import fix) | **No** — BTC price silently changed (D7) | **No** — 100/100% survival, ~$0 costs (expected: 100% vs 64%, $22 vs $32k) | Revert line 201 to `76_342.50` (restoring the configuration prior to breaking commit [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26)) |
-| `comprehensive_ht_vs_aave_analysis.py` | **No** — dead import (D6) | Yes | Not yet tested | Needs same import fix as `balanced_scenario_monte_carlo.py` |
-| `hourly_test_with_rebalancer.py` | Yes (after prior fix) | **Partial** — missing `agent_snapshot_frequency_minutes` (D8); swap formula changed (D9) | **Partial** — 2/6 panels match (BTC, pool price); 1/6 partially matches (rebalance amounts OK, slippage ~430× off due to D9); 3/6 fail (HF, YT, net position due to D8) | Need D8 fix + D9 revert (`48a9ff2` swap formula in `compute_swap_step`). Pre-existing bugs B3 (fee bypass) and B4 (triple-recording) should be fixed separately. |
+All remediations below are on branch `alex/sim-validation_commit-ba544b1`.
+
+### `balanced_scenario_monte_carlo.py`
+
+| Issue | Status | Commit/Edit | Notes |
+|-------|--------|-------------|-------|
+| D6 (dead import) | **Fixed** | Edit 1 — comment stub replacing deleted `target_health_factor_analysis` import | |
+| D7 (btc_final_price) | **Fixed** | Edit 2 — restored to `76_342.50` (−23.66%) | |
+| D9 (swap formula) | **Fixed** | Edit 5 / commit `081a011` — standard `get_amount0_delta` restored for YT→MOET output | |
+| F4 (AAVE cascading liquidation) | **Fixed** | Edit 3 — direct debt repayment in `aave_agent.py:execute_aave_liquidation` | |
+| Sim order (AAVE HF alignment) | **Fixed** | Edit 4 — AAVE runs before HT (HT resets seed; AAVE doesn't) | |
+| B3 (fee bypass) | **Not fixed** | Pre-existing bug; fix is independent of reproduction | |
+| B4 (triple-recording) | **Not fixed** | Pre-existing bug; inflates event counts and `cost_of_rebalancing` 3× | |
+
+**Current state:** Runnable. Config matches Primer scenario (−23.66% BTC decline). Results in `results_commit-ba544b1/Balanced_Scenario_Monte_Carlo/` reflect all 5 edits. Full edit details: → `PRIMER-COMPATIBLE_balanced_scenario_monte_carlo.md`.
+
+### `comprehensive_ht_vs_aave_analysis.py`
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| D6 (dead import) | **Not fixed** | Same `target_health_factor_analysis` import as above; needs same fix |
+
+### `hourly_test_with_rebalancer.py`
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| D8 (snapshot frequency + x-axis) | **Not fixed** | Need `agent_snapshot_frequency_minutes = 1` in config + use `minute` field in chart code |
+| D9 (swap formula) | **Fixed** | Commit `081a011` — applies globally to all simulations using `compute_swap_step` |
+| B3 (fee bypass) | **Not fixed** | Pre-existing bug; independent fix |
+| B4 (triple-recording) | **Not fixed** | Pre-existing bug; independent fix |
 

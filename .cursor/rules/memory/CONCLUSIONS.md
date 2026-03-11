@@ -43,29 +43,29 @@ Findings from our analysis of commit `da4cbf9`. Each becomes a zero-hypothesis t
 
 | ID | Finding | da4cbf9 Status | ba544b1 Status | Ref |
 |----|---------|---------------|---------------|-----|
-| B2 | Flash crash infinite leverage loop — `moet_debt` resets to $0 after borrow | evidence-supported | to-verify | `FLASH_CRASH_SIMULATION_SUMMARY.md` |
-| B3 | Uniswap V3 fee bypass — `fee_amount` omitted from `amount_specified_remaining` (`uniswap_v3_math.py:1282`) | evidence-supported | to-verify | `FCM_PRIMER_FIGURE_MAPPING.md §B3` |
-| B4 | Triple-recording of rebalancing events — 3 appends per event (engine lines 536, 562, 628) | evidence-supported | to-verify | `FCM_PRIMER_FIGURE_MAPPING.md §B4` |
+| B2 | Flash crash infinite leverage loop — `moet_debt` resets to $0 after borrow | evidence-supported | **not fixed** — affects `flash_crash_simulation.py`, outside `balanced_scenario_monte_carlo.py` remediation scope | `FLASH_CRASH_SIMULATION_SUMMARY.md` |
+| B3 | Uniswap V3 fee bypass — `fee_amount` omitted from `amount_specified_remaining` (`uniswap_v3_math.py:1279`) | evidence-supported | **not fixed** — verified still present | `FCM_PRIMER_FIGURE_MAPPING.md §B3` |
+| B4 | Triple-recording of rebalancing events — 3 appends per event (engine lines 536, 562, 628) | evidence-supported | **not fixed** — verified 3 append sites still present | `FCM_PRIMER_FIGURE_MAPPING.md §B4` |
 
 ### Post-delivery changes (introduced after Primer — may be addressed in ba544b1)
 
 | ID | Finding | da4cbf9 Status | ba544b1 Status | Ref |
 |----|---------|---------------|---------------|-----|
-| D7 | `btc_final_price` changed from 76,342.50 to 90,000 in file move (`684c007`) | evidence-supported | to-verify | `FCM_PRIMER_FIGURE_MAPPING.md §D7` |
-| D8 | Snapshot frequency default (1440min) + chart x-axis bug break §4.3 panels | evidence-supported | to-verify | `FCM_PRIMER_FIGURE_MAPPING.md §D8` |
-| D9 | Swap formula change (`48a9ff2`): `get_amount0_delta` → `get_amount0_delta_economic`, collapses slippage from ~$2 to ~$0.005 | evidence-supported | to-verify | `FCM_PRIMER_FIGURE_MAPPING.md §D9` |
-| F4 | Post-`2fd742d` AAVE liquidation cascading: broken BTC→MOET swap → 3 liquidations/agent ($77k vs $32k) | validated | to-verify | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F4` |
+| D7 | `btc_final_price` changed from 76,342.50 to 90,000 in file move (`684c007`) | evidence-supported | **fixed** (Edit 2) | `FCM_PRIMER_FIGURE_MAPPING.md §D7` |
+| D8 | Snapshot frequency default (1440min) + chart x-axis bug break §4.3 panels | evidence-supported | **not fixed** — different script (`hourly_test_with_rebalancer.py`) | `FCM_PRIMER_FIGURE_MAPPING.md §D8` |
+| D9 | Swap formula change (`48a9ff2`): `get_amount0_delta` → `get_amount0_delta_economic`, collapses slippage from ~$2 to ~$0.005 | evidence-supported | **fixed** (Edit 5, commit `081a011`) | `FCM_PRIMER_FIGURE_MAPPING.md §D9` |
+| F4 | Post-`2fd742d` AAVE liquidation cascading: broken BTC→MOET swap → 3 liquidations/agent ($77k vs $32k) | validated | **fixed** (Edit 3) | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F4` |
 
 ### Structural / reproduction findings
 
 | ID | Finding | da4cbf9 Status | ba544b1 Status | Ref |
 |----|---------|---------------|---------------|-----|
-| F2 | AAVE survival rates not reproducible from any tested committed code — HFs deterministic but don't match Primer pattern | validated | to-verify | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F2` |
-| F3 | HT costs ~1.8× lower than Primer at every tested commit | evidence-supported | to-verify | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F3` |
-| F6 | Swapped sim order reduces AAVE survival error: 1/5 runs match exactly (Run 3), others off by 20pp; prior "3/5" claim was based on stale sim values in "Primer" column | validated | verified | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §Attempt 4` |
+| F2 | AAVE survival rates not reproducible from any tested committed code — HFs deterministic but don't match Primer pattern | validated | **persists** — sim order swap (Edit 4) improves to 1/5 match | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F2` |
+| F3 | HT costs lower than Primer at every tested configuration | evidence-supported | **persists, widened** — current engine $1–4/agent vs Primer $19–22 (~5–15×); old engine was $9–13 (~1.8×). Post-`2fd742d` engine changes reduce HT costs further. | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F3` |
+| F6 | Swapped sim order reduces AAVE survival error: 1/5 runs match exactly (Run 3), others off by 20pp | validated | **verified** — sim order swap applied (Edit 4); consistent results confirmed | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §Attempt 4` |
 | — | `cfdbd21` cannot reproduce Primer (wrong config, all post-delivery changes present) | evidence-supported | n/a | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §Avenue 1` |
 | — | Discrepancy check false positive in `full_year_sim.py:2951` | validated | to-verify | `DISCREPANCY-ANALYSIS_full_year_sim.md` |
-| — | MOET:BTC pool scaling bug — `_initialize_btc_pair_positions` uses raw `total_liquidity*1e6` as L | evidence-supported | to-verify | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F4 root cause` |
+| — | MOET:BTC pool scaling bug — `_initialize_btc_pair_positions` uses raw `total_liquidity*1e6` as L | evidence-supported | **bypassed** by F4 fix (direct debt repayment avoids the pool entirely) | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md §F4 root cause` |
 
 ---
 
@@ -76,6 +76,8 @@ Findings from our analysis of commit `da4cbf9`. Each becomes a zero-hypothesis t
 **All da4cbf9 prior-art findings confirmed at ba544b1 (2026-03-03):** The ba544b1 diff is purely organizational (file moves); no engine, agent, or math files were changed. B2, B3, B4, D7, D8, D9, F4, F6 all persist unchanged. Confirmed by re-running `balanced_scenario_monte_carlo.py` with identical fix set and obtaining identical results.
 
 **Figure 2 Reproduction (2026-03-03):** With 3 fixes (import stub removal, D7 btc_final_price, F4 direct debt repayment) + swapped simulation order: AAVE survival (60%, 40%, 80%, 40%, 60%) vs Primer (40%, 60%, 80%, 60%, 80%). Run 3 matches exactly; others off by 20pp. AAVE costs ~$34.5k vs Primer ~$32.9k (+5% explained by collateral factor 0.85 vs 0.80). Auditor: results "look intuitively better than what is currently in the primer."
+
+**Remediation cross-check (2026-03-10):** All 5 PRIMER-COMPATIBLE edits verified present in code. D9 revert confirmed at `compute_swap_step` (commit `081a011`). Pre-existing bugs B3 (fee bypass) and B4 (triple-recording) verified still present. Results in `results_commit-ba544b1/` now reflect all 5 edits. HT costs non-zero ($1–4/agent) confirming D9 revert is effective, but much lower than old engine ($9–13) or Primer ($19–22) — F3 gap widened due to post-`2fd742d` engine changes. → `FCM_PRIMER_FIGURE_MAPPING.md` moved to `sims-review_commit-ba544b1/` with updated Remediation Status table.
 
 ### Evidence-Supported
 (none yet beyond what's confirmed above)
