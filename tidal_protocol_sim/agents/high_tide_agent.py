@@ -349,13 +349,16 @@ class HighTideAgent(BaseAgent):
         if total_moet_raised > 0:
             slippage_cost = total_yield_tokens_sold - total_moet_raised
             
-            # CRITICAL FIX: Record in engine for real swap data
-            if self.engine:
-                self.engine.record_agent_rebalancing_event(
-                    self.agent_id, current_minute, total_moet_raised, 
-                    total_moet_raised, slippage_cost, self.state.health_factor
-                )
-            
+            # B4 fix: removed call to engine.record_agent_rebalancing_event (aggregate record).
+            # Per-cycle records are written by engine._execute_yield_token_sale directly.
+            #
+            # C̶R̶I̶T̶I̶C̶A̶L̶ ̶F̶I̶X̶:̶ ̶R̶e̶c̶o̶r̶d̶ ̶i̶n̶ ̶e̶n̶g̶i̶n̶e̶ ̶f̶o̶r̶ ̶r̶e̶a̶l̶ ̶s̶w̶a̶p̶ ̶d̶a̶t̶a̶
+            # if self.engine:
+            #     self.engine.record_agent_rebalancing_event(
+            #         self.agent_id, current_minute, total_moet_raised, 
+            #         total_moet_raised, slippage_cost, self.state.health_factor
+            #     )
+
             # Also keep agent-level record for backward compatibility
             self.state.rebalancing_events.append({
                 "minute": current_minute,

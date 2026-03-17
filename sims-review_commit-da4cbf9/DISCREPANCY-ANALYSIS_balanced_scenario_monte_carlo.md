@@ -19,7 +19,7 @@ Figure 2 in the Primer is **not reproducible** from either of the two code versi
 | **F2**: AAVE survival rates differ from Primer at all tested code versions                | Non-reproducible results          | High (complex, unknown) — best single-run result: 1/5 exact match |
 | **F3**: HT costs ~1.8× lower than Primer at every tested commit                           | Unexplained cost discrepancy      | Low (probably low)                                                |
 | **F4**: Current engine triggers 3× more AAVE liquidation events per agent than old engine | Behavioral change (`2fd742d`)     | High — inflates AAVE costs from ~$32k to ~$77k per agent          |
-| **F5**: B4 triple-recording inflates HT rebalancing event counts and costs                | Pre-existing bug (also in Primer) | Medium                                                            |
+| **F5**: B4 triple-recording inflates HT rebalancing event counts and costs                | Pre-existing bug (also in Primer) | **Fixed** (2026-03-11) — removed duplicate appends at engine lines 536 and 628; kept 562 only |
 
 
 ---
@@ -150,11 +150,11 @@ With the old engine (pre-D9 integer swap formula) and correct BTC price, HT cost
 
 **Possible explanations:**
 
-- B4 (triple-recording) partially explains this: if costs are 3× inflated and the chart displays the inflated value, Primer's $19 would represent an actual cost of ~$6.3. My old engine run's $10.67 (scenario average) with B4 correction would be ~$3.56 actual. Still a ~1.8× gap.
+- B4 (triple-recording, now fixed) partially explained this: costs were 3× inflated and the chart displayed the inflated value. Primer's $19 would represent an actual cost of ~$6.3. The old engine run's $10.67 (scenario average) with B4 correction would be ~$3.56 actual. Still a ~1.8× gap.
 - The Primer may have been generated from code with different rebalancing behavior (more aggressive cycles, different stopping condition) that produced more slippage per agent.
 - The pool state (initial reserves, concentration) may have differed in the uncommitted version used for the Primer.
 
-**Status:** Not fully root-caused. The ~1.8× factor persists across both B4-corrected and raw comparisons.
+**Status:** Not fully root-caused. The ~1.8× factor persists across both B4-corrected and raw comparisons. B4 itself is now fixed (2026-03-11).
 
 ### F4: Current engine triggers multiple AAVE liquidation events per agent
 
@@ -174,11 +174,15 @@ These changes alter the AAVE simulation dynamics. The old engine's single-liquid
 - Old engine: approx. $32-33k per liquidated agent (matches Primer)
 - Current engine: approx. $75-78k per liquidated agent (approx. 2.4× Primer)
 
-### F5: B4 triple-recording of rebalancing events (pre-existing)
+### F5: B4 triple-recording of rebalancing events (pre-existing) — FIXED
 
-Already documented in `FCM_PRIMER_FIGURE_MAPPING.md`, section §B4. Each rebalancing event is appended 3× to `engine.rebalancing_events`. The `cost_of_rebalancing` per agent sums slippage across all 3 copies, tripling the reported cost.
+Already documented in `FCM_PRIMER_FIGURE_MAPPING.md`, section §B4. Each rebalancing event was appended 3× to `engine.rebalancing_events`. The `cost_of_rebalancing` per agent summed slippage across all 3 copies, tripling the reported cost.
 
 In the old engine run (Attempt 3), HT agents consistently show `Rebalancing_Events = 3` per agent. This is likely 1 actual trigger event × 3 copies (B4), NOT 3 separate rebalancing triggers.
+
+**Fix (2026-03-11):** Removed duplicate append at engine line 536 and the `record_agent_rebalancing_event` method (lines 625–648, including its caller at `high_tide_agent.py:354`). Kept the append at line 562 only. Result: exactly 1 `rebalancing_events` entry per rebalancing cycle, for both normal and emergency paths. Results regenerated.
+
+**`yield_token_trades` also verified safe (2026-03-17):** The removed method also appended to `engine.yield_token_trades`. Exhaustive code-path analysis confirmed this was equally redundant — all three YT sale paths (rebalancing, emergency, deleveraging) are accounted for. Details and a newly identified pre-existing tracking gap (B5: deleveraging sales absent from `yield_token_trades`) documented in → [`FCM_PRIMER_FIGURE_MAPPING.md` §B4–B5](../sims-review_commit-ba544b1/FCM_PRIMER_FIGURE_MAPPING.md).
 
 ---
 
@@ -265,7 +269,7 @@ Commit `cfdbd21b9b5e5a4af40c813cdc7f2cc18c831d28` (2025-11-12, "csv fix") was cl
 
 ## Cross-References
 
-- `[FCM_PRIMER_FIGURE_MAPPING.md](FCM_PRIMER_FIGURE_MAPPING.md)` — D7 (config change), D9 (swap formula), B3 (fee bypass), B4 (triple-recording)
+- [`FCM_PRIMER_FIGURE_MAPPING.md`](../sims-review_commit-ba544b1/FCM_PRIMER_FIGURE_MAPPING.md) — D7 (config change), D9 (swap formula), B3 (fee bypass), B4 (triple-recording), B5 (deleveraging tracking gap)
 - `[RUNNABILITY_AUDIT.md](RUNNABILITY_AUDIT.md)` — Category A: import bugs
 - `tidal_protocol_sim/results/Balanced_Scenario_Monte_Carlo_old/` — Attempt 1 results (btc=90,000, current engine)
 - `tidal_protocol_sim/results/Balanced_Scenario_Monte_Carlo/` — Attempt 3 results (btc=76,342.50, old engine, current order)

@@ -524,17 +524,20 @@ class HighTideVaultEngine(TidalProtocolEngine):
             # Calculate slippage for tracking
             slippage_cost = moet_amount_needed - moet_raised  # Simple slippage calculation
             
-            # Record the rebalancing event for engine tracking
-            rebalancing_event = {
-                "agent_id": agent.agent_id,
-                "minute": minute,
-                "moet_needed": moet_amount_needed,
-                "moet_raised": moet_raised,
-                "swap_type": swap_type,
-                "slippage_cost": slippage_cost
-            }
-            self.rebalancing_events.append(rebalancing_event)
-            
+            # B4 fix: removed duplicate rebalancing_events.append here.
+            # The single append at line ~565 (below) covers both normal and emergency paths.
+            #
+            # R̶e̶c̶o̶r̶d̶ ̶t̶h̶e̶ ̶r̶e̶b̶a̶l̶a̶n̶c̶i̶n̶g̶ ̶e̶v̶e̶n̶t̶ ̶f̶o̶r̶ ̶e̶n̶g̶i̶n̶e̶ ̶t̶r̶a̶c̶k̶i̶n̶g̶
+            # rebalancing_event = {
+            #     "agent_id": agent.agent_id,
+            #     "minute": minute,
+            #     "moet_needed": moet_amount_needed,
+            #     "moet_raised": moet_raised,
+            #     "swap_type": swap_type,
+            #     "slippage_cost": slippage_cost
+            # }
+            # self.rebalancing_events.append(rebalancing_event)
+
             # Record pool activity for tracking (but don't double-execute)
             self.moet_yield_tracker.record_snapshot(
                 pool_state={
@@ -622,30 +625,34 @@ class HighTideVaultEngine(TidalProtocolEngine):
             
         return success
     
-    def record_agent_rebalancing_event(self, agent_id: str, minute: int, moet_raised: float, 
-                                     debt_repayment: float, slippage_cost: float, health_factor_before: float):
-        """CRITICAL FIX: Method for agents to record real rebalancing events in engine"""
-        self.rebalancing_events.append({
-            "minute": minute,
-            "agent_id": agent_id,
-            "moet_raised": moet_raised,
-            "moet_amount_needed": moet_raised,  # Approximate
-            "debt_repayment": debt_repayment,
-            "health_factor_before": health_factor_before,
-            "rebalancing_type": "yield_token_sale",
-            "slippage_cost": slippage_cost
-        })
-        
-        # Also record in yield token trades
-        self.yield_token_trades.append({
-            "minute": minute,
-            "agent_id": agent_id,
-            "action": "rebalancing_sale",
-            "moet_amount": moet_raised,
-            "debt_repayment": debt_repayment,
-            "agent_health_factor": health_factor_before,
-            "slippage_cost": slippage_cost
-        })
+    # B4 fix: removed record_agent_rebalancing_event method.
+    # Rebalancing events are now recorded once per cycle in _execute_yield_token_sale (line ~565).
+    # The aggregate record this method provided can be recomputed from per-cycle data.
+    #
+    # def record_agent_rebalancing_event(self, agent_id: str, minute: int, moet_raised: float, 
+    #                                  debt_repayment: float, slippage_cost: float, health_factor_before: float):
+    #     """C̶R̶I̶T̶I̶C̶A̶L̶ ̶F̶I̶X̶:̶ ̶M̶e̶t̶h̶o̶d̶ ̶f̶o̶r̶ ̶a̶g̶e̶n̶t̶s̶ ̶t̶o̶ ̶r̶e̶c̶o̶r̶d̶ ̶r̶e̶a̶l̶ ̶r̶e̶b̶a̶l̶a̶n̶c̶i̶n̶g̶ ̶e̶v̶e̶n̶t̶s̶ ̶i̶n̶ ̶e̶n̶g̶i̶n̶e̶"""
+    #     self.rebalancing_events.append({
+    #         "minute": minute,
+    #         "agent_id": agent_id,
+    #         "moet_raised": moet_raised,
+    #         "moet_amount_needed": moet_raised,  # Approximate
+    #         "debt_repayment": debt_repayment,
+    #         "health_factor_before": health_factor_before,
+    #         "rebalancing_type": "yield_token_sale",
+    #         "slippage_cost": slippage_cost
+    #     })
+    #
+    #     # Also record in yield token trades
+    #     self.yield_token_trades.append({
+    #         "minute": minute,
+    #         "agent_id": agent_id,
+    #         "action": "rebalancing_sale",
+    #         "moet_amount": moet_raised,
+    #         "debt_repayment": debt_repayment,
+    #         "agent_health_factor": health_factor_before,
+    #         "slippage_cost": slippage_cost
+    #     })
         
     def _get_tracked_agent(self) -> Optional[HighTideAgent]:
         """Get the agent being tracked for position analysis"""

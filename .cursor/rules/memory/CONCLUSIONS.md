@@ -45,7 +45,8 @@ Findings from our analysis of commit `da4cbf9`. Each becomes a zero-hypothesis t
 |----|---------|---------------|---------------|-----|
 | B2 | Flash crash infinite leverage loop — `moet_debt` resets to $0 after borrow | evidence-supported | **not fixed** — affects `flash_crash_simulation.py`, outside `balanced_scenario_monte_carlo.py` remediation scope | `FLASH_CRASH_SIMULATION_SUMMARY.md` |
 | B3 | Uniswap V3 fee bypass — `fee_amount` omitted from `amount_specified_remaining` (`uniswap_v3_math.py:1279`) | evidence-supported | **not fixed** — verified still present | `FCM_PRIMER_FIGURE_MAPPING.md §B3` |
-| B4 | Triple-recording of rebalancing events — 3 appends per event (engine lines 536, 562, 628) | evidence-supported | **not fixed** — verified 3 append sites still present | `FCM_PRIMER_FIGURE_MAPPING.md §B4` |
+| B4 | Triple-recording of rebalancing events — 3 appends per event (engine lines 536, 562, 628) | verified | **fixed** (2026-03-11) — removed appends at lines 536 and 628 (+ method + caller); kept 562 only. `yield_token_trades` coverage also verified safe (2026-03-17). Results regenerated. Auditor verified (2026-03-12). | `FCM_PRIMER_FIGURE_MAPPING.md §B4` |
+| B5 | Deleveraging YT sales absent from `engine.yield_token_trades` — deleveraging path bypasses `engine._execute_yield_token_sale`; downstream consumers (`real_slippage_cost`, `total_rebalancing_sales`, charts) miss deleveraging trades | verified | **pre-existing** — does not affect `balanced_scenario_monte_carlo.py` (no deleveraging). Affects sims where deleveraging fires. | `FCM_PRIMER_FIGURE_MAPPING.md §B5` |
 
 ### Post-delivery changes (introduced after Primer — may be addressed in ba544b1)
 
@@ -77,7 +78,7 @@ Findings from our analysis of commit `da4cbf9`. Each becomes a zero-hypothesis t
 
 **Figure 2 Reproduction (2026-03-03):** With 3 fixes (import stub removal, D7 btc_final_price, F4 direct debt repayment) + swapped simulation order: AAVE survival (60%, 40%, 80%, 40%, 60%) vs Primer (40%, 60%, 80%, 60%, 80%). Run 3 matches exactly; others off by 20pp. AAVE costs ~$34.5k vs Primer ~$32.9k (+5% explained by collateral factor 0.85 vs 0.80). Auditor: results "look intuitively better than what is currently in the primer."
 
-**Remediation cross-check (2026-03-10):** All 5 PRIMER-COMPATIBLE edits verified present in code. D9 revert confirmed at `compute_swap_step` (commit `081a011`). Pre-existing bugs B3 (fee bypass) and B4 (triple-recording) verified still present. Results in `results_commit-ba544b1/` now reflect all 5 edits. HT costs non-zero ($1–4/agent) confirming D9 revert is effective, but much lower than old engine ($9–13) or Primer ($19–22) — F3 gap widened due to post-`2fd742d` engine changes. → `FCM_PRIMER_FIGURE_MAPPING.md` moved to `sims-review_commit-ba544b1/` with updated Remediation Status table.
+**Remediation cross-check (2026-03-10):** All 5 PRIMER-COMPATIBLE edits verified present in code. D9 revert confirmed at `compute_swap_step` (commit `081a011`). Pre-existing bug B3 (fee bypass) verified still present. B4 (triple-recording) was fixed on 2026-03-11. Results in `results_commit-ba544b1/` now reflect all 5 edits + B4 fix. HT costs non-zero ($1–4/agent pre-B4-fix; ~$0.2–$1.1/agent post-B4-fix) confirming D9 revert is effective, but much lower than old engine ($9–13) or Primer ($19–22) — F3 gap widened due to post-`2fd742d` engine changes. → `FCM_PRIMER_FIGURE_MAPPING.md` moved to `sims-review_commit-ba544b1/` with updated Remediation Status table.
 
 ### Evidence-Supported
 (none yet beyond what's confirmed above)
@@ -111,7 +112,7 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Carried forward from
 | 2026-02-27 | D8 snapshot bugs | Evidence-supported | Code trace, reproduction run |
 | 2026-02-28 | D9 swap formula change | Evidence-supported | git diff, code trace |
 | 2026-02-28 | B3 fee bypass | Evidence-supported | git show, Uniswap V3 ref comparison |
-| 2026-02-28 | B4 triple-recording | Evidence-supported | Code trace (3 append sites) |
+| 2026-02-28 | B4 triple-recording | **Verified** + **fixed** (2026-03-11) | Code trace (3 append sites); fix: removed 536+628, kept 562. Auditor confirmed (2026-03-12). |
 | 2026-03-02 | §4.2 AAVE survival non-reproducible | Validated | 3 reproduction attempts, RNG proof |
 | 2026-03-02 | Post-`2fd742d` AAVE liquidation cascading | Validated | CSV comparison, auditor review |
 | 2026-03-02b | Swapped order reduces AAVE error 43% | Validated | Attempt 4 run, auditor confirmed |
@@ -120,3 +121,5 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Carried forward from
 | 2026-03-03 | **Commit transition** | Restructured | All da4cbf9 findings → Prior Art; ba544b1 sections created |
 | 2026-03-03 | F6 "3/5 match" claim | Corrected | Prior "Primer" column was stale sim values; actual match is 1/5 (Run 3 only) |
 | 2026-03-03 | ba544b1 reproduction confirmed | Evidence-supported | Identical results to da4cbf9 Attempt 4; all prior findings persist |
+| 2026-03-17 | B4 `yield_token_trades` safety | Verified safe | Exhaustive code-path analysis: all 3 YT sale paths covered without removed method |
+| 2026-03-17 | B5 deleveraging tracking gap | **Verified** | Code-path trace: deleveraging bypasses `engine._execute_yield_token_sale`. Auditor confirmed (2026-03-17). |

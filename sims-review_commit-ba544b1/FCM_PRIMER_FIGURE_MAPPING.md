@@ -30,11 +30,11 @@ Section 4 contains **8 images** drawn from **3 distinct simulation scripts**. Th
 ### Figure 2: Performance Matrix Heatmap: High Tide vs AAVE
 
 **Script:** `sim_tests/balanced_scenario_monte_carlo.py`  
-**Chart function:** `_create_scenario_performance_matrix` (line 1848)  
+**Chart function:** `_create_scenario_performance_matrix` (line 1847)  
 **Output file:** `tidal_protocol_sim/results/Balanced_Scenario_Monte_Carlo/charts/performance_matrix_heatmap.png`  
 **Referenced in:** `reports/High_Tide_vs_AAVE_Executive_Summary_Clean.md` (line 97, `\includegraphics`)
 
-**Config** (`ComprehensiveComparisonConfig`, line 184):
+**Config** (`ComprehensiveComparisonConfig`, line 183):
 - 5 scenarios × 5 agents = 25 agents total; all "Balanced" (same params, different RNG seeds)
 - `initial_hf_range: (1.25, 1.45)`, `target_hf: 1.1`
 - BTC: `$100,000 → $76,342.50` (−23.66%) over 60 min — **original config; see D7 for silent change in `684c007`**
@@ -87,7 +87,7 @@ All six §4.3 figures originate from a **single script and a single run** of `si
 | ALM interval | 12-hour | `alm_rebalance_interval_minutes = 720` ✓ |
 | Algo threshold | 50 bps | `algo_deviation_threshold_bps = 50.0` ✓ |
 
-**Note:** This script is listed in `RUNNABILITY_AUDIT.md` as **Category A (crash on import)** due to wrong `sys.path` (`Path(__file__).parent` instead of `.parent.parent`, line 18). 
+**Note:** This script is listed in `RUNNABILITY_AUDIT.md` as **Category A (crash on import)** due to wrong `sys.path` (`Path(__file__).parent` instead of `.parent.parent`, line 29). 
 
 ---
 
@@ -204,7 +204,7 @@ No simulation in the repository uses this HF distribution. `balanced_scenario_mo
 
 ### D7: Config change (`684c007`, 2025-09-25) ⚠️ breaking results reported in FCM Primer
 
-**Commit:** [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26) makes single change in `balanced_scenario_monte_carlo.py` (line 204) while moving file from repo root to `sim_tests/`:
+**Commit:** [`684c007` from 2025-09-25](https://github.com/Unit-Zero-Labs/tidal-protocol-research/commit/684c0073ce3ab76579c17b388d0488aa1b219b26) makes single change in `balanced_scenario_monte_carlo.py` (line 203) while moving file from repo root to `sim_tests/`:
 
 ```diff
 - self.btc_final_price = 76_342.50  # 23.66% decline (consistent with previous analysis)
@@ -317,17 +317,47 @@ This commit replaced the standard Uniswap V3 integer output formula with a float
 
 **Impact:** Fees not properly charged; pool MOET reserves drain ~0.05% faster per swap than intended. Fix independently of D9.
 
-### B4: Triple-recording of rebalancing events in engine
+### B4: Triple-recording of rebalancing events in engine — FIXED (2026-03-11)
 
-Each agent rebalancing appends **3 entries** to `engine.rebalancing_events`:
+Each agent rebalancing previously appended **3 entries** to `engine.rebalancing_events`:
 
-| # | Location | Cause |
-|---|----------|-------|
-| 1 | [`high_tide_vault_engine.py:536`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L536) | First append in `_execute_yield_token_sale` |
-| 2 | [`high_tide_vault_engine.py:562`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L562-L561) | Second append in same function (duplicate) |
-| 3 | [`high_tide_vault_engine.py:628`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L628) | `record_agent_rebalancing_event`, called from `high_tide_agent.py:354` |
+| # | Location (current) | Cause | Status |
+|---|----------|-------|--------|
+| 1 | `high_tide_vault_engine.py:527` | First append in `_execute_yield_token_sale` | **Removed** (commented out at line 539) |
+| 2 | `high_tide_vault_engine.py:565` | Second append in same function | **Kept** (single source of truth) |
+| 3 | `high_tide_vault_engine.py:628` | `record_agent_rebalancing_event`, called from `high_tide_agent.py:352` | **Removed** (method + caller) |
 
-**Impact on charts:** The chart function [`_create_agent_slippage_analysis_chart` (line 1411)](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/a626658d4adf9ad21bcf1c96391164a80bfee9a6/sim_tests/hourly_test_with_rebalancer.py#L1406) reads `simulation_results["rebalancing_events"]` which is [`engine.rebalancing_events` (line 1098)](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L1098-L1097). Per-event statistics (mean, median, max) are unaffected (all 3 copies carry identical values), but histogram frequencies and event counts are 3× inflated. The `cost_of_rebalancing` per agent ([`high_tide_vault_engine.py:995`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L994-L996)) sums slippage across all 3 copies, tripling the reported cost.
+**Fix:** Removed append at line 527 and the entire `record_agent_rebalancing_event` method (lines 628–655), plus its caller at `high_tide_agent.py:352`. Kept the append at line 565 only. Execution path analysis confirmed that line 562 is reached for both normal rebalancing and emergency yield sales, so no events are lost.
+
+**Previous impact on charts:** The chart function [`_create_agent_slippage_analysis_chart` (line 1411)](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/a626658d4adf9ad21bcf1c96391164a80bfee9a6/sim_tests/hourly_test_with_rebalancer.py#L1406) reads `simulation_results["rebalancing_events"]` which is [`engine.rebalancing_events` (line 1098)](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L1098-L1097). Per-event statistics (mean, median, max) were unaffected (all 3 copies carried identical values), but histogram frequencies and event counts were 3× inflated. The `cost_of_rebalancing` per agent ([`high_tide_vault_engine.py:995`](https://github.com/Unit-Zero-Labs/tidal-protocol-research/blob/acc46570060d662c415e6a0ca2dcea4f90dfba7b/tidal_protocol_sim/engine/high_tide_vault_engine.py#L994-L996)) summed slippage across all 3 copies, tripling the reported cost. All results regenerated post-fix.
+
+**`yield_token_trades` coverage (verified 2026-03-17):** The removed `record_agent_rebalancing_event` method also appended to `engine.yield_token_trades` (action `"rebalancing_sale"`). Exhaustive code-path analysis confirms this append was equally redundant — all three YT sale paths are already covered:
+
+| Code path | `yield_token_trades` write site | Coverage |
+|---|---|---|
+| **Rebalancing** (agent loop → `engine._execute_yield_token_sale`) | Line 577 — per-cycle record | ✓ Active, fires every cycle |
+| **Emergency yield sale** (engine dispatch → `_execute_yield_token_sale`) | Line 577 — same function | ✓ Active |
+| **Deleveraging** (`agent.execute_deleveraging` → `agent.execute_yield_token_sale`) | *None* — bypasses engine method entirely | Not recorded in `yield_token_trades` (see B5) |
+
+The removed method was only called from the rebalancing path (`high_tide_agent.py:354`), never from deleveraging. Therefore its removal does not reduce `yield_token_trades` coverage for any code path. YT purchases are recorded independently at line 490 (`execute_yield_token_purchase`).
+
+### B5: Deleveraging YT sales not recorded in `engine.yield_token_trades` (pre-existing)
+
+The deleveraging path (`engine._execute_deleveraging_action` → `agent.execute_deleveraging` → `agent.execute_yield_token_sale`) calls `yield_token_pool.execute_yield_token_sale` directly, bypassing `engine._execute_yield_token_sale`. As a result, deleveraging YT sales are absent from `engine.yield_token_trades`.
+
+**Downstream impact** — the following consumers see an incomplete picture when deleveraging is active:
+
+| Consumer | Location | Effect |
+|---|---|---|
+| `real_slippage_cost` | `high_tide_vault_engine.py:1004` | Sums `slippage_cost` from `yield_token_trades` per agent — misses deleveraging slippage |
+| `total_rebalancing_sales` | `high_tide_vault_engine.py:1099` | Sums MOET from `"rebalancing_sale"` entries — misses deleveraging sales |
+| `total_trades` | `high_tide_vault_engine.py:1100` | Count excludes deleveraging trades |
+| Chart: YT activity timeline | `high_tide_charts.py:211–222` | Deleveraging sales not plotted |
+| Chart: protocol utilization | `high_tide_charts.py:415–416` | Cumulative fee estimate excludes deleveraging |
+
+Deleveraging has its own tracking (`agent.state.deleveraging_events`, `engine.deleveraging_events`) so the data exists — it is simply not consolidated into `yield_token_trades`.
+
+**Scope:** Pre-existing design gap. Does not affect `balanced_scenario_monte_carlo.py` (which does not use deleveraging). Affects simulations where `_execute_deleveraging_action` fires (e.g., `full_year_sim.py`, flash crash scenarios with deleveraging enabled).
 
 
 ---
@@ -359,9 +389,9 @@ All remediations below are on branch `alex/sim-validation_commit-ba544b1`.
 | F4 (AAVE cascading liquidation) | **Fixed** | Edit 3 — direct debt repayment in `aave_agent.py:execute_aave_liquidation` | |
 | Sim order (AAVE HF alignment) | **Fixed** | Edit 4 — AAVE runs before HT (HT resets seed; AAVE doesn't) | |
 | B3 (fee bypass) | **Not fixed** | Pre-existing bug; fix is independent of reproduction | |
-| B4 (triple-recording) | **Not fixed** | Pre-existing bug; inflates event counts and `cost_of_rebalancing` 3× | |
+| B4 (triple-recording) | **Fixed** (2026-03-11) | Removed duplicate appends at engine lines 536 and 628; kept 562 only. Results regenerated. | |
 
-**Current state:** Runnable. Config matches Primer scenario (−23.66% BTC decline). Results in `results_commit-ba544b1/Balanced_Scenario_Monte_Carlo/` reflect all 5 edits. Full edit details: → `PRIMER-COMPATIBLE_balanced_scenario_monte_carlo.md`.
+**Current state:** Runnable. Config matches Primer scenario (−23.66% BTC decline). Results in `results_commit-ba544b1/Balanced_Scenario_Monte_Carlo/` reflect all 5 edits + B4 fix. Full edit details: → `PRIMER-COMPATIBLE_balanced_scenario_monte_carlo.md`.
 
 ### `comprehensive_ht_vs_aave_analysis.py`
 
@@ -376,5 +406,5 @@ All remediations below are on branch `alex/sim-validation_commit-ba544b1`.
 | D8 (snapshot frequency + x-axis) | **Not fixed** | Need `agent_snapshot_frequency_minutes = 1` in config + use `minute` field in chart code |
 | D9 (swap formula) | **Fixed** | Commit `081a011` — applies globally to all simulations using `compute_swap_step` |
 | B3 (fee bypass) | **Not fixed** | Pre-existing bug; independent fix |
-| B4 (triple-recording) | **Not fixed** | Pre-existing bug; independent fix |
+| B4 (triple-recording) | **Fixed** (2026-03-11) | Removed duplicate appends; kept line 562 only. Affects all sims using `high_tide_vault_engine.py`. |
 

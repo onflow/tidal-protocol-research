@@ -11,20 +11,22 @@
 
 ## Side-by-Side
 
-| Dimension | `balanced_scenario_monte_carlo` | `run_flash_crash` |
-|-----------|--------------------------------|-------------------|
-| **Purpose** | HT vs AAVE head-to-head comparison | Protocol resilience stress test |
-| **Protocols** | Both HT and AAVE | HT only |
-| **Duration** | 60 minutes | 2,880 minutes (2 days) |
-| **Agents** | 5 per protocol per scenario, heterogeneous HFs (uniform 1.25–1.45) | 150 HT, homogeneous (all HF: 1.15 initial / 1.05 rebalancing / 1.08 target) |
-| **System debt** | ~$325k per protocol (5 × $65k); ~$650k total across both | $20M (150 × $133k) |
-| **BTC price** | Synthetic linear decline ($100k → $76.3k in Primer-compatible config; committed ba544b1 code uses $90k — see D7), engine-controlled | Deterministic crash (5-min drop → floor → exponential recovery), sim-controlled override |
-| **Stressors** | BTC decline only | BTC crash + oracle manipulation + liquidity evaporation + forced liquidations |
-| **Market structure** | None — pool arbing disabled, no arbitrageurs | Explicit: ALM/Algo rebalancers, 10 MOET arb agents, liquidity throttling |
-| **Oracle** | True price only | Manipulated: wicks (~12%/min), ±volatility noise, 5-min pre-crash attack window |
-| **Outcome determinism** | Near-total — initial HF draw determines survival | Emergent from multi-mechanism interaction |
-| **Real-world data** | None | None |
-| **Primer figure** | §4.2 Figure 2 (performance heatmap) | None identified |
+
+| Dimension               | `balanced_scenario_monte_carlo`                                                                                                     | `run_flash_crash`                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Purpose**             | HT vs AAVE head-to-head comparison                                                                                                  | Protocol resilience stress test                                                          |
+| **Protocols**           | Both HT and AAVE                                                                                                                    | HT only                                                                                  |
+| **Duration**            | 60 minutes                                                                                                                          | 2,880 minutes (2 days)                                                                   |
+| **Agents**              | 5 per protocol per scenario, heterogeneous HFs (uniform 1.25–1.45)                                                                  | 150 HT, homogeneous (all HF: 1.15 initial / 1.05 rebalancing / 1.08 target)              |
+| **System debt**         | ~$325k per protocol (5 × $65k); ~$650k total across both                                                                            | $20M (150 × $133k)                                                                       |
+| **BTC price**           | Synthetic linear decline ($100k → $76.3k in Primer-compatible config; committed ba544b1 code uses $90k — see D7), engine-controlled | Deterministic crash (5-min drop → floor → exponential recovery), sim-controlled override |
+| **Stressors**           | BTC decline only                                                                                                                    | BTC crash + oracle manipulation + liquidity evaporation + forced liquidations            |
+| **Market structure**    | None — pool arbing disabled, no arbitrageurs                                                                                        | Explicit: ALM/Algo rebalancers, 10 MOET arb agents, liquidity throttling                 |
+| **Oracle**              | True price only                                                                                                                     | Manipulated: wicks (~12%/min), ±volatility noise, 5-min pre-crash attack window          |
+| **Outcome determinism** | Near-total — initial HF draw determines survival                                                                                    | Emergent from multi-mechanism interaction                                                |
+| **Real-world data**     | None                                                                                                                                | None                                                                                     |
+| **Primer figure**       | §4.2 Figure 2 (performance heatmap)                                                                                                 | None identified                                                                          |
+
 
 ---
 
@@ -54,6 +56,7 @@
 
 ## Cross-References
 
-- Monte Carlo detailed analysis: [`DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md`](../sims-review_commit-da4cbf9/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md)
-- Flash crash code analysis: [`FLASH_CRASH_SIMULATION_SUMMARY.md`](../sims-review_commit-da4cbf9/FLASH_CRASH_SIMULATION_SUMMARY.md)
-- Data sources for all sims: [`SIMULATION_DATA_SOURCES.md`](SIMULATION_DATA_SOURCES.md)
+- Monte Carlo detailed analysis: `[DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md](../sims-review_commit-da4cbf9/DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md)`
+- Flash crash code analysis: `[FLASH_CRASH_SIMULATION_SUMMARY.md](../sims-review_commit-da4cbf9/FLASH_CRASH_SIMULATION_SUMMARY.md)`
+- Data sources for all sims: `[SIMULATION_DATA_SOURCES.md](SIMULATION_DATA_SOURCES.md)`
+

@@ -134,7 +134,7 @@ Auditor-initiated investigation of ~430× slippage discrepancy between Primer fi
 
 **B3 — Fee bypass (category ii, pre-existing):** `uniswap_v3_math.py:1282` omits `fee_amount` from `amount_specified_remaining` update. Present since swap function was first written. Causes fee to be re-swapped in subsequent loop iterations. Impact masked by integer truncation in original formula; amplified by floating-point formula.
 
-**B4 — Triple-recording (category ii, pre-existing):** `engine.rebalancing_events` gets 3 appends per event (engine lines 536, 562, 628). Present since `684c007`.
+**B4 — Triple-recording (category ii, pre-existing) — FIXED (2026-03-11):** `engine.rebalancing_events` got 3 appends per event (engine lines 536, 562, 628). Present since `684c007`. Fix: removed appends at 536 and 628 (+ method `record_agent_rebalancing_event` + caller at `high_tide_agent.py:354`); kept 562 only.
 
 **Methodology established:** For reproducing Primer results across all simulations: (i) revert post-Primer changes only, (ii) catalog pre-existing bugs separately for independent fixes.
 
@@ -343,7 +343,7 @@ Auditor-initiated verification: which edits from PRIMER-COMPATIBLE analysis are 
 
 **Pre-existing bugs verified still present:**
 - B3: `uniswap_v3_math.py:1279` — `amount_specified_remaining -= amount_in` (still omits `fee_amount`)
-- B4: `high_tide_vault_engine.py` — 3 `rebalancing_events.append` sites (lines 536, 562, 628)
+- B4: `high_tide_vault_engine.py` — 3 `rebalancing_events.append` sites (lines 536, 562, 628) — **FIXED (2026-03-11)**: removed 536 and 628, kept 562
 
 **Results data update:** Results in `results_commit-ba544b1/` are current (all 5 edits applied, including D9 revert). Auditor corrected an earlier misunderstanding that the results predated D9.
 
@@ -357,6 +357,101 @@ Auditor-initiated verification: which edits from PRIMER-COMPATIBLE analysis are 
 - Updated `CONCLUSIONS.md` ba544b1 status column for all findings
 
 **Also noted:** `base_case_charts.py` exists in `sim_tests/archive_tests/` — UnitZero's charting utility for the comparison object. Generates charts from results data (BTC price, survival, net APY, health factor, yield strategy, agent performance). ~1069 lines.
+
+---
+
+### Session 2026-03-11: B4 fix + Monte Carlo chart replacement
+
+**B4 fix applied:**
+- Removed duplicate `rebalancing_events.append` at engine line 536 and method `record_agent_rebalancing_event` (lines 625–648) + caller at `high_tide_agent.py:354`
+- Kept single append at line 562 — covers both normal rebalancing and emergency yield sale paths
+- Verified: post-fix agent 0 Run 1 shows 96 events (was 225 = ~3× inflated; cost 0.92 vs 2.76 = exactly 3×)
+- Re-ran `balanced_scenario_monte_carlo.py`; results regenerated in `results_commit-ba544b1/`
+
+**Chart replacement — `performance_matrix_heatmap.png`:**
+- Created `sim_adaptations/balanced_mc_overview_charts.py`
+- Reads CSV + JSON from results dir; computes 3 metrics per (Strategy, Scenario):
+  1. Survival rate (3 series: HT rebal. sufficiency, HT no collat. liq., AAVE)
+  2. Liquidated collateral value (HT, AAVE)
+  3. Position degradation (HT, AAVE)
+- Generates 2 charts: `overview_bars.png` (grouped bars, mean ± std across runs) and `per_run_lollipops.png` (per-run breakdown)
+- Consistency checks all pass: HT survival 100%, AAVE 56%, HT $0 liquidated, AAVE $76k/run, HT $387/agent degradation, AAVE $804/agent
+
+**All B4 references updated** across 5 documents: DISCREPANCY-ANALYSIS (da4cbf9), FCM_PRIMER_FIGURE_MAPPING (ba544b1), PRIMER-COMPATIBLE (ba544b1), CONCLUSIONS.md, SESSION_LOG.md.
+
+→ Artifacts: `sim_adaptations/balanced_mc_overview_charts.py`, `overview_bars.png`, `per_run_lollipops.png`
+
+---
+
+### Session 2026-03-11b: Position degradation recovery framing
+
+**Recovery degradation metric added** to `balanced_mc_overview_charts.py`:
+- Per-agent `recovery_degradation`: FCM = bottom (fixed stablecoin cost); AAVE = `P_0 - (Final_Net_Position / P_bottom) * P_0`
+- `per_run_summary()`: new cols `mean_recovery_degradation`, plus AAVE survived/liquidated split (`mean_pos_degrad_aave_surv`, `mean_recov_degrad_aave_surv`, `_aave_liq` variants)
+- `overview_summary()`: mean ± std for all new per-run cols
+
+**Position degradation chart replaced** with dual-scenario grouped layout:
+- 3 groups (FCM, AAVE survived, AAVE liquidated) × 2 scenarios ("At crash bottom", "After full recovery")
+- Annotations: FCM bracket "$387 (fixed)", AAVE liquidated arrow "+$426 from recovery"
+- Subtitle: "FCM cost is fixed; AAVE liquidation losses grow with recovery"
+- Footnote: "56% of AAVE agents survived. Gas costs not modeled."
+- Title: "Unrecoverable Position Damage"
+
+**Lollipop panel 3 updated** to show recovery degradation with 3-way AAVE split (FCM, AAVE survived, AAVE liquidated). Title: "Position Degradation After Full Recovery".
+
+**Numbers (verified against plan estimates):**
+| | Plan | Actual |
+|---|---|---|
+| FCM recovery | $387 | $387 |
+| AAVE survived recovery | $467 | $506 |
+| AAVE liquidated recovery | $1,798 | $1,802 |
+| AAVE avg recovery | $1,053 | $1,053 |
+
+→ Artifacts: `position_degradation.png` (new layout), `per_run_lollipops.png` (panel 3 updated)
+
+---
+
+### Session 2026-03-17: B4 `yield_token_trades` verification + B5 deleveraging gap
+
+**B4 extension — `yield_token_trades` safety verified:**
+Auditor-requested exhaustive code-path analysis: is the `yield_token_trades.append` inside the removed `record_agent_rebalancing_event` also redundant? Confirmed safe for all three YT sale paths:
+- Rebalancing + emergency: per-cycle recording at `_execute_yield_token_sale` line 577 already covers these
+- Deleveraging: never called `record_agent_rebalancing_event`; has own tracking
+- Purchases: independent at line 490
+
+**B5 — new finding: deleveraging YT sales absent from `engine.yield_token_trades`:**
+The deleveraging path (`agent.execute_deleveraging` → `agent.execute_yield_token_sale`) calls the pool directly, bypassing `engine._execute_yield_token_sale`. Deleveraging data exists in `agent.state.deleveraging_events` / `engine.deleveraging_events` but is not consolidated into `yield_token_trades`. Affects `real_slippage_cost`, `total_rebalancing_sales`, chart functions. Pre-existing gap; does not affect `balanced_scenario_monte_carlo.py` (no deleveraging).
+
+**Code-reference cross-check (auditor-directed):**
+Systematic verification of all line-number references in `FCM_PRIMER_FIGURE_MAPPING.md`. Found 8 stale refs from two root causes:
+- Edit 1 (import fix) removed 1 net line from `balanced_scenario_monte_carlo.py` → 3 refs shifted by −1
+- B4 fix (comment blocks) added +3 lines in engine, +2 in agent → 4 refs shifted
+- 1 pre-existing error (`hourly_test_with_rebalancer.py` sys.path: 18→29, was always wrong)
+All other refs (19+) confirmed correct. New directive extracted: "Verify code refs after edits" → `WORKING_STYLE.md § Document Authoring`.
+
+**Memory system observation:** First positive evidence that `03-memory-update-triggers.mdc` (system-prompt trigger checklist) is working — successfully reinforced a directive on a praise-only turn, which was previously the failure mode. Logged in `WORKING_STYLE.md § Memory Update Crowding`.
+
+→ `FCM_PRIMER_FIGURE_MAPPING.md` §B4 (extended), §B5 (new), line refs updated throughout
+→ `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` (da4cbf9) §F5 cross-reference updated; broken FCM doc link fixed
+
+---
+
+### Session 2026-03-17b: Chart legend rework — overview_bars + position_degradation
+
+**overview_bars.png — legend split and reframing:**
+- Replaced shared 3-entry bottom legend with per-panel dedicated legends
+- Left panel (Survival Rate): 2 entries — "FCM: no collateral liquidated", "AAVE: 56% of agents unaffected by liquidation"
+- Right panel (Liquidated Collateral Value): 3 entries — reframed to describe averaging population: "average across all agents (including unaffected)" vs "average across liquidated agents only (44%)"
+- Right panel y-axis moved to right side; left panel narrowed (1:1.6 ratio); title gap tightened
+
+**position_degradation.png — legend reframing:**
+- FCM entry: "rebalancing cost only, no liquidation losses" (metric-relevant, not survival-relevant)
+- AAVE entries: parallel structure with percentage at end
+- Legend kept inside chart (sufficient space at top)
+
+**Design principle applied:** Legend text should describe what the bar represents *in the context of the chart's metric*, not repeat the same framing across all charts. The same sub-population can need different descriptions depending on whether the chart shows survival, collateral loss, or position degradation.
+
+→ Artifacts: `overview_bars.png`, `position_degradation.png` (both regenerated)
 
 ---
 

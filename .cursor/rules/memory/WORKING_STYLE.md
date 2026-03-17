@@ -50,9 +50,12 @@ Foundational directives from genesis and early interaction. Also encoded in `.md
 3. Discussed whether specific signal types (positive feedback, corrections, new findings) could serve as first-class triggers — not yet implemented
 
 **What we haven't tried**:
-4. *(2026-03-10)* Created `.cursor/rules/03-memory-update-triggers.mdc` — always-applied rule with 4 explicit trigger checks (feedback received? artifact created? finding surfaced? takeaway stated but not written?). Hypothesis: injecting the checklist at the system-prompt level gives it higher salience than a directive in this file. **Unverified** — observe over next sessions.
+4. *(2026-03-10)* Created `.cursor/rules/03-memory-update-triggers.mdc` — always-applied rule with 4 explicit trigger checks (feedback received? artifact created? finding surfaced? takeaway stated but not written?). Hypothesis: injecting the checklist at the system-prompt level gives it higher salience than a directive in this file.
 
-**Status**: Diagnosis captured. Solution pending. Observe over next sessions whether awareness alone shifts behavior.
+**Evidence log**:
+- *(2026-03-17)* **Positive signal.** Auditor gave praise ("well done") on root-cause tracing. I immediately reinforced the relevant directive in this file — exactly the lightweight-turn scenario (acknowledging praise) that previously failed. Auditor noted this as an improvement over earlier behavior where positive feedback was acknowledged conversationally but not acted on (no reinforcement update). This is the first observed instance where the `.mdc` trigger checklist produced the desired behavior on a praise-only turn.
+
+**Status**: First positive evidence that item 4 (system-prompt-level trigger checklist) is effective. Continue observing — one instance doesn't confirm reliability. Watch especially for: (a) consistency across sessions, (b) corrections/new findings (not just praise), (c) whether the behavior persists as the session grows longer and context pressure increases.
 
 ## Communication Style
 
@@ -72,6 +75,7 @@ Foundational directives from genesis and early interaction. Also encoded in `.md
 | Conversation-local labels stay local | 1 | 2026-02-28 | Shorthand from conversation → prose in audit docs (`sims-review/`) |
 | Scoped IDs need source context | 1 | 2026-03-10 | IDs like F4, B2, D9 are scoped to the analysis doc that defines them. When citing outside that doc (e.g., in Audit State summaries), use descriptive text + `→ source_doc` reference. |
 | Results over process | 1 | 2026-03-10 | Describe findings as they stand, not the journey to them. Audit docs state conclusions and evidence — not "we previously thought X, now we think Y." |
+| Verify code refs after edits | 2 | 2026-03-17 | After editing audit docs that contain code line references: cross-check ALL line refs in the document against the current codebase. Code edits (bug fixes, comment blocks) shift line numbers — refs written pre-fix go stale. Do this as a background task during any doc edit, not only when explicitly asked. When fixing stale refs, trace the root cause (which edit caused the shift, by how many lines) to confirm the fix is complete rather than relying on sampling. Positive feedback on root-cause tracing (2026-03-17). |
 
 ### Internal classifications (not for audit documents)
 

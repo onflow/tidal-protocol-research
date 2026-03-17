@@ -152,7 +152,7 @@ Details: [`FCM_PRIMER_FIGURE_MAPPING.md §D9`](FCM_PRIMER_FIGURE_MAPPING.md).
 | 5   | 100%    | 60%       | $2.03         | $34,326       | $22            | $32,315         |
 
 **Notes:**
-- HT costs include B4 triple-recording inflation (actual cost ≈ reported ÷ 3)
+- ~~HT costs include B4 triple-recording inflation (actual cost ≈ reported ÷ 3)~~ B4 fixed (2026-03-11); results regenerated with correct 1× recording. The values in the table above predate this fix.
 - HT costs are non-zero (D9 revert working) but $1–4/agent — significantly lower than both the Primer ($19–22) and the old engine at `1c9fce8` ($9–13). The post-`2fd742d` engine changes (leverage check throttling, MOET balance accounting) alter rebalancing behavior beyond just the swap formula, widening the F3 gap.
 - AAVE results identical to prior (pre-D9) run — D9 revert only affects HT swap path
 - AAVE cost ~$34.5k vs Primer ~$32.9k (+5%, explained by collateral factor 0.80→0.85)
