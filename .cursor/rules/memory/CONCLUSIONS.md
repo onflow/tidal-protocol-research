@@ -98,6 +98,7 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Carried forward from
 | F2 | off-by-one in `range(2160)` — 3rd ALM trigger | 2026-02-27 | Low | da4cbf9 |
 | B2 | Flash crash infinite leverage loop | 2026-02-20 | Medium | da4cbf9 |
 | F3 | HT cost ~1.8× lower than Primer at every tested commit | 2026-03-02 | Medium | da4cbf9 |
+| — | `enable_weekly_yield_harvest` config flag never consumed | 2026-03-18 | Low | ba544b1 |
 
 ## Conclusion Change Log
 
@@ -123,3 +124,4 @@ Canonical list lives in `SESSION_LOG.md § Open Questions`. Carried forward from
 | 2026-03-03 | ba544b1 reproduction confirmed | Evidence-supported | Identical results to da4cbf9 Attempt 4; all prior findings persist |
 | 2026-03-17 | B4 `yield_token_trades` safety | Verified safe | Exhaustive code-path analysis: all 3 YT sale paths covered without removed method |
 | 2026-03-17 | B5 deleveraging tracking gap | **Verified** | Code-path trace: deleveraging bypasses `engine._execute_yield_token_sale`. Auditor confirmed (2026-03-17). |
+| 2026-03-18 | HT Check 1 (HF deleveraging) dead code | **Verified** | 3 compounding errors: sizing self-defeating, execution contradicts intent, priority preempts. Verified at `ba544b1` on remote. Zero sim impact. Auditor confirmed (2026-03-18). → `HF_DELEVERAGING_DEAD_CODE.md` |
