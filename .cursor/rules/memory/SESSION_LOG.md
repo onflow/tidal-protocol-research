@@ -455,6 +455,57 @@ All other refs (19+) confirmed correct. New directive extracted: "Verify code re
 
 ---
 
+### Session 2026-03-18: Yield harvesting exhaustive audit
+
+**Context**: Auditor relayed colleague Felipe's description of a weekly `_check_deleveraging` that harvests rebased YT gains when HF > initial_hf — sells accrued yield, converts to BTC collateral. Auditor named it "yield harvesting" and asked for exhaustive codebase/docs/reports search.
+
+**Findings — yield harvesting fully implemented in two agents:**
+
+1. **HT agent** (`high_tide_agent.py:723`): `_check_deleveraging` has two branches:
+   - Check 1 (HF deleveraging): HF > initial×1.05 → sell YT to reduce HF to initial×1.02 (position reduction, not harvest)
+   - Check 2 (weekly harvest): every 7 days → `_execute_weekly_deleveraging` (line 775) → sells accrued yield (rebasing price increase × quantity) → full swap chain YT→MOET→USDC/USDF→BTC→deposit as collateral
+
+2. **AAVE agent** (`aave_agent.py:307`): `execute_weekly_rebalancing` called at `leverage_frequency_minutes` intervals:
+   - HF < initial×0.99 → deleverage (sell YT → repay debt)
+   - HF ≥ initial → harvest (sell incremental yield → MOET / btc_price → add BTC collateral; simpler than HT, no AMM)
+
+3. **Dead config flag**: `enable_weekly_yield_harvest` set in all 14 study scripts, never read by `full_year_sim.py`, engine, or agents. No gating effect — harvest logic always active.
+
+4. **Exercise scope**: All year-long studies (S1–S14) exercise this. Short sims (balanced_scenario_monte_carlo 60min, flash crash 2d, hourly_test 36h) never fire the weekly timer.
+
+5. **Documentation**: Whitepaper Study 11 section (lines 1556–1690) has full pseudocode + rationale. `SIMULATION_STUDY_CATEGORIZATION.md` documents both agents. `HIGH_TIDE_VAULT_ENGINE_README.md` covers only leverage-increase, not harvest.
+
+6. **Why it goes beyond simple yield harvesting**: (a) cross-asset conversion (YT yield → BTC collateral, different token types); (b) collateral reinforcement loop — harvest improves HF, which can trigger separate leverage-increase path (10-min check), composing the two mechanisms.
+
+→ `sims-review_commit-ba544b1/YIELD_HARVESTING_AUDIT.md`
+
+**Check 1 (HF deleveraging) dead code — three compounding errors:**
+- Layer 1: Sizing math produces negative `debt_reduction_needed` when trigger fires (HF > initial×1.05 but target_hf = initial×1.02, so target_debt > actual debt at P_MOET≈1)
+- Layer 2: Execution path (YT→MOET→stablecoin→BTC→deposit) adds collateral / raises HF — contradicts stated purpose of reducing HF
+- Layer 3: Priority ordering (leverage increase at step 2 fires before `_check_deleveraging` at step 4)
+- **Impact**: None — code never fires. Present in all HT simulations but inert. Verified at `ba544b1` on remote.
+→ `sims-review_commit-ba544b1/HF_DELEVERAGING_DEAD_CODE.md`
+→ Cross-references added to `YIELD_HARVESTING_AUDIT.md` (strikethrough Check 1 row + annotation)
+
+---
+
+### Session 2026-03-19: Generalized Agent Learnings — Systematic Review Planning
+
+**Context**: Meta-task — systematic per-file review of `generalized-agent-learnings/` against `.cursor/rules/` source material.
+
+**Technical research — subagent context architecture:**
+Auditor challenged batched subagent approach. Web research confirmed:
+- Opus 4.6: 1M token context, but practical attention degrades ~100-200K tokens
+- Cursor subagents: isolated context windows (own clean context per subagent)
+- Estimated ~50-70K tokens per review subagent (all source + all target files) — well within high-quality range
+- Conclusion: one subagent per file (10 parallel) beats batching; batching only crowds context without benefit since each subagent reads all files anyway
+
+→ `TECHNICAL.md § Cursor Subagent Architecture`
+
+**Auditor directive**: "resources are well invested here" — continue iterating until diminishing returns reached, not to minimize subagent runs.
+
+---
+
 ## Open Questions (cross-session)
 
 | ID | Question | Since | Refs |
@@ -463,3 +514,4 @@ All other refs (19+) confirmed correct. New directive extracted: "Verify code re
 | F2 | off-by-one in `range(2160)` — 3rd ALM trigger never fires | 2026-02-27 | `POOL_REBALANCER_36H_COMPARISON.md` |
 | B2 | Flash crash infinite leverage loop — `moet_debt` reset root cause | 2026-02-20 | `FLASH_CRASH_SIMULATION_SUMMARY.md` |
 | F3 | HT cost ~1.8× lower than Primer at every tested commit | 2026-03-02 | `DISCREPANCY-ANALYSIS_balanced_scenario_monte_carlo.md` |
+| — | `enable_weekly_yield_harvest` config flag set in 14 study scripts but never consumed by sim/engine/agents | 2026-03-18 | SESSION_LOG this entry |

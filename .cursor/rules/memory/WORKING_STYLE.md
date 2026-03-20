@@ -54,8 +54,9 @@ Foundational directives from genesis and early interaction. Also encoded in `.md
 
 **Evidence log**:
 - *(2026-03-17)* **Positive signal.** Auditor gave praise ("well done") on root-cause tracing. I immediately reinforced the relevant directive in this file — exactly the lightweight-turn scenario (acknowledging praise) that previously failed. Auditor noted this as an improvement over earlier behavior where positive feedback was acknowledged conversationally but not acted on (no reinforcement update). This is the first observed instance where the `.mdc` trigger checklist produced the desired behavior on a praise-only turn.
+- *(2026-03-18)* **Positive signal.** During technical work (adding GitHub links to audit doc), a new directive was extracted (GitHub-linked code refs + VS Code rendering workaround) and written to WORKING_STYLE.md in the same response — without a dedicated prompt. Auditor explicitly noted this as the pattern working correctly. Different scenario from the first instance: this is a new-finding extraction during a multi-step task, not a praise-only turn.
 
-**Status**: First positive evidence that item 4 (system-prompt-level trigger checklist) is effective. Continue observing — one instance doesn't confirm reliability. Watch especially for: (a) consistency across sessions, (b) corrections/new findings (not just praise), (c) whether the behavior persists as the session grows longer and context pressure increases.
+**Status**: Two positive instances confirmed. Continue observing for reliability — watch especially for: (a) whether the behavior persists as session length and context pressure increase, (b) failure cases (missed updates) to identify remaining gaps.
 
 ## Communication Style
 
@@ -76,6 +77,7 @@ Foundational directives from genesis and early interaction. Also encoded in `.md
 | Scoped IDs need source context | 1 | 2026-03-10 | IDs like F4, B2, D9 are scoped to the analysis doc that defines them. When citing outside that doc (e.g., in Audit State summaries), use descriptive text + `→ source_doc` reference. |
 | Results over process | 1 | 2026-03-10 | Describe findings as they stand, not the journey to them. Audit docs state conclusions and evidence — not "we previously thought X, now we think Y." |
 | Verify code refs after edits | 2 | 2026-03-17 | After editing audit docs that contain code line references: cross-check ALL line refs in the document against the current codebase. Code edits (bug fixes, comment blocks) shift line numbers — refs written pre-fix go stale. Do this as a background task during any doc edit, not only when explicitly asked. When fixing stale refs, trace the root cause (which edit caused the shift, by how many lines) to confirm the fix is complete rather than relying on sampling. Positive feedback on root-cause tracing (2026-03-17). |
+| GitHub-linked code refs | 1 | 2026-03-18 | Code line references in audit docs should include GitHub permalink URLs: `[func (line N)](https://github.com/.../blob/<commit>/path#LN)`. **Reference HEAD commit** on the working branch (e.g., `bdc93ff`) so readers with the latest code can navigate directly — citing the audited commit (`ba544b1`) forces them to translate shifted line numbers. Use case-by-case judgment: if a reference specifically concerns code *before* our fixes, cite the original commit and note this. Verify line numbers against HEAD before linking. **Backtick-in-link workaround** — VS Code/Cursor misrenders `` [`code`](url) `` when the link text is *only* a backtick span. Fix: add a trailing space before `]`: `` [`code` ](url) ``. Links with text after the backtick (e.g., `` [`code` (line N)](url) ``) render fine as-is. |
 
 ### Internal classifications (not for audit documents)
 

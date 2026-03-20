@@ -127,6 +127,30 @@ Last updated: 2026-03-03
 
 ---
 
+## Cursor Subagent Architecture
+
+Researched 2026-03-19. Key takeaways for task planning:
+
+| Property | Value | Source |
+|----------|-------|--------|
+| Opus 4.6 context window | 1M tokens (~750k words) | Anthropic docs, March 2026 |
+| Practical attention threshold | ~100-200K tokens ("lost in the middle" effect) | Multiple sources |
+| Subagent context isolation | Each subagent gets own clean context window | Cursor docs |
+| Context compaction | Server-side compression when approaching limit; extended thinking blocks stripped | Anthropic docs |
+| MRCR v2 retrieval accuracy at 1M | 78.3% (best among frontier models) | Anthropic benchmarks |
+| Max output | 128K tokens | Anthropic docs |
+| Pricing | $5 input / $25 output per 1M tokens; no long-context surcharge | Anthropic docs |
+
+**Task splitting heuristics:**
+- Parallel dispatch: 3+ independent tasks with no shared state, clear file boundaries
+- Sequential dispatch: tasks with dependencies or shared file modifications
+- Each subagent ~50-70K tokens of context stays well within high-quality attention range
+- One task per subagent maximizes focus quality; batching multiple review targets into one subagent crowds context without benefit
+
+**Status:** `evidence-supported` (web research; not auditor-verified)
+
+---
+
 ## Verification Queue
 
 Items needing code verification:
