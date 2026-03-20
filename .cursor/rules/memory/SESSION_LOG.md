@@ -489,6 +489,23 @@ All other refs (19+) confirmed correct. New directive extracted: "Verify code re
 
 ---
 
+### Session 2026-03-19: Generalized Agent Learnings — Systematic Review Planning
+
+**Context**: Meta-task — systematic per-file review of `generalized-agent-learnings/` against `.cursor/rules/` source material.
+
+**Technical research — subagent context architecture:**
+Auditor challenged batched subagent approach. Web research confirmed:
+- Opus 4.6: 1M token context, but practical attention degrades ~100-200K tokens
+- Cursor subagents: isolated context windows (own clean context per subagent)
+- Estimated ~50-70K tokens per review subagent (all source + all target files) — well within high-quality range
+- Conclusion: one subagent per file (10 parallel) beats batching; batching only crowds context without benefit since each subagent reads all files anyway
+
+→ `TECHNICAL.md § Cursor Subagent Architecture`
+
+**Auditor directive**: "resources are well invested here" — continue iterating until diminishing returns reached, not to minimize subagent runs.
+
+---
+
 ## Open Questions (cross-session)
 
 | ID | Question | Since | Refs |
