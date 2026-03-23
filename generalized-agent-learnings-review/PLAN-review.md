@@ -181,16 +181,20 @@ These are already maximally general and directly usable by any agent performing 
 
 ### Other
 
-**O1: PLAN.md's status as a living vs. archival document.**
+**O1: PLAN.md serves dual purposes — archival record AND reusable template.**
 
-The file doesn't state whether it should be maintained as the system evolves or whether it's a one-time process record. If it's archival (documenting how the extraction was done), it should say so — this prevents future agents from trying to keep it in sync with the output files. If it's living (a template for future extractions), it should be parameterized (see R3).
+The file works as both: (a) a historical record documenting how and why this extraction was done, and (b) a template for future extraction efforts in new domains. Both uses are valuable. A brief note acknowledging this dual purpose would help future readers understand they can use it either way.
 
 Suggested addition at the end:
 ```markdown
 ## Status
 
-This is an archival document. It records the rationale and plan for the initial extraction. It does not need to be maintained as the output files evolve. For future extraction efforts in new domains, use this as a template — replace domain-specific references with the new context.
+This document serves two purposes:
+1. **Archival**: Records the rationale and plan for this specific extraction. Does not need to be maintained as the output files evolve.
+2. **Template**: For future extraction efforts in new domains, use this as a starting point — replace domain-specific references with the new context.
 ```
+
+*(Auditor feedback: both uses are intentional and valuable — don't force a choice between them.)*
 
 **O2: Relationship to 00-OVERVIEW.md could be clearer.**
 

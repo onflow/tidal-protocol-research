@@ -106,6 +106,29 @@ Do NOT record:
 - Meta-learnings (generalized patterns from recurring failures)
 - Identified technical debt in the memory system itself
 
+## Active Retrieval
+`[long-running]`
+
+Memory files are not auto-injected into every prompt. They sit on a reference shelf. The agent must proactively read them.
+
+### At Session Start
+
+Read selectively, in this order:
+
+1. **SESSION_LOG** — Living summary (top) + last 1–2 session entries + Open Questions table. Goal: orient to current state.
+2. **WORKING_STYLE** — Scan for directives relevant to the current task. Goal: prime behavioral calibration.
+3. **CONCLUSIONS** — Only if the session involves validating or revisiting findings. Goal: avoid re-deriving known results.
+4. **TECHNICAL** — Only if doing technical work in the domain. Goal: access verified formulas, algorithms, code map.
+5. **CHANGELOG** — Only during self-evaluation or compaction. Goal: recall past failures and structural changes.
+
+### During Work
+
+Connect current work to prior findings, open questions, and established patterns. Don't wait to be reminded.
+
+### Why Active, Not Automatic
+
+Auto-injecting all memory files into every prompt would pollute context with irrelevant content. Active retrieval forces the agent to decide what's relevant — itself a form of learning. It also prevents the memory system from consuming context budget on every turn.
+
 ## Update Rules
 
 ### When to Update
@@ -118,6 +141,7 @@ After every substantive exchange, evaluate:
 4. **Conclusion validated/invalidated?** → CONCLUSIONS
 5. **Session produced insights/artifacts?** → SESSION_LOG
 6. **Takeaway stated in conversation but not written to file?** → Write it now. Conversation does not persist.
+7. **Pattern emerging from repeated friction?** (3+ iterations on similar task) → Extract into WORKING_STYLE as a new directive (→ `03-SELF-IMPROVEMENT.md` §Pattern Extraction)
 
 ### How to Update
 
@@ -127,6 +151,15 @@ After every substantive exchange, evaluate:
 - **Mark status.** Every factual claim has a verification status.
 - **Generalize appropriately.** Ask: "at what level of generality does this still hold?"
 - **Principles over recollections.** State the general rule, not the specific case. Reference cases as examples, not as the directive itself.
+
+### Validation Gate for Memory Updates
+
+Not all memory content follows the same update rules:
+
+- **Technical conclusions** (findings about the system being analyzed): The agent independently records at `unverified` or `evidence-supported`. Only the human can elevate to `verified`. Proactively present when evidence is sufficient.
+- **Operational content** (working style, session logs, meta-guidelines): The agent updates freely using own judgment. No human gate required.
+
+→ `04-EVIDENCE-AND-VALIDATION.md` for the full treatment.
 
 ### Memory Update Crowding Problem
 `[long-running]` — partially solved
@@ -208,3 +241,17 @@ Not all memory content is equally stable or equally costly to change incorrectly
 Higher levels are more stable and require stronger evidence to change. A Level 0 error is self-correcting (re-investigate). A Level 3 error can silently corrupt the learning process for sessions before anyone notices.
 
 → `07-META-LEARNINGS.md` §10b for the error-recovery perspective; `08-BOOTSTRAPPING.md` § Content Hierarchy for the change-frequency perspective.
+
+---
+
+## Cross-References
+
+- Active Retrieval rationale → `00-OVERVIEW.md` (Why Active Retrieval, Not Auto-Injection)
+- Validation Gate full treatment → `04-EVIDENCE-AND-VALIDATION.md` (The Validation Gate, Status Transitions)
+- Memory Update Crowding and the Three Priorities Problem → `03-SELF-IMPROVEMENT.md` (The Three Priorities Problem)
+- Pattern extraction trigger → `03-SELF-IMPROVEMENT.md` (Pattern Extraction, The 3-Iteration Trigger)
+- Always-injected checklist pattern → applicable to any behavior that fails as implicit habit; see also `08-BOOTSTRAPPING.md` (Step 2, Step 4)
+- Compaction failure details → `06-FAILURE-MODES.md` (F1: Compaction Catastrophe, F8: Purpose Conflation)
+- Content Hierarchy error-recovery perspective → `07-META-LEARNINGS.md` §10b
+- Content Hierarchy change-frequency perspective → `08-BOOTSTRAPPING.md` § Content Hierarchy
+- Bootstrapping the file structure from scratch → `08-BOOTSTRAPPING.md` (First-Session Template)

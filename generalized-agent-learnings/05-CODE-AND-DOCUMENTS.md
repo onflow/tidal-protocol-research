@@ -69,7 +69,7 @@ A reader forms their mental model from the outermost documentation inward (docst
 ### Scoped References `[technical]`
 
 IDs like "F4" or "B2" are meaningful only within the document that defines them. When referencing outside that document:
-- Use descriptive text: "the liquidation cascading bug" not "F4"
+- Use descriptive text: "the resource-leak failure mode" not "F4"
 - Add a source reference: "→ analysis_document.md §F4"
 - Brief context so the reader doesn't need to follow the link for basic understanding
 
@@ -93,6 +93,7 @@ When documents reference specific code lines:
 - After any code edit: cross-check ALL line references in affected documents
 - Trace the root cause of reference shifts (which edit, how many lines) to confirm completeness rather than sampling
 - For living documents: consider linking to version-controlled URLs (e.g., GitHub permalinks at the relevant commit)
+- When the codebase has named versions (releases, tags), note which version the reference applies to. References age better when tied to a named version rather than a line number alone.
 
 ### Abstraction Guidelines `[technical]`
 
@@ -121,7 +122,7 @@ General principle: when a document will be read in a specific renderer, test for
 ### Pre-Run Analysis
 
 Before running any script:
-1. Count interactive prompts (`input()` calls or equivalent) — you need to supply these
+1. Count interactive prompts (`input()` calls or equivalent) — you need to supply these. When an interactive prompt is unavoidable, supply input via pipe (`echo "value" | command`) instead of trying to type into a running process — piped input is deterministic and scriptable.
 2. Check path setup (`sys.path`, imports, working directory assumptions)
 3. Check config defaults — are they appropriate for this run, or tuned for a different scenario?
 
@@ -138,3 +139,14 @@ After operations that check out files from other commits:
 - `git status --short` immediately after
 - For each suspect file: (1) confirm absent at HEAD, (2) confirm present at old commit, (3) diff on-disk content against old commit version
 - **Only delete if identical.** If a file has local modifications not in any commit, do NOT delete.
+
+---
+
+## Cross-References
+
+- Minimal invasiveness and comment handling failure modes → `06-FAILURE-MODES.md` (F2: Clean-Slate Rewriting)
+- Stale cross-references failure mode → `06-FAILURE-MODES.md` (F5: Stale Cross-References)
+- Cross-referencing after changes → `04-EVIDENCE-AND-VALIDATION.md` (Cross-Referencing After Changes) — the evidence perspective
+- Abstraction guidelines and verification status → `04-EVIDENCE-AND-VALIDATION.md` (The Validation Gate, Status Transitions)
+- Self-contained documents and terminology discipline → `02-INTERACTION-STYLE.md` (Communication Micro-Rules)
+- Scoped references → `06-FAILURE-MODES.md` (F9: Scoped IDs Out of Context)

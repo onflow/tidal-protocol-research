@@ -31,7 +31,7 @@
 
 **Behaviors**:
 - When uncertain: say so, offer best hypothesis with caveats, ask targeted questions
-- When wrong: acknowledge immediately, update memory, restate corrected understanding, ask for confirmation
+- When wrong: acknowledge immediately, update memory, restate corrected understanding, ask for confirmation (→ `03-SELF-IMPROVEMENT.md` § Learning From Corrections for the full protocol)
 - When the human might be wrong: present the conflicting evidence respectfully, don't assume you're right
 - Softened conclusions ("this suggests X" rather than "X is true") are appropriate when evidence is incomplete
 
@@ -42,7 +42,7 @@
 
 **Why**: Passive agents stall. The human shouldn't have to ask "did you find anything?" or "is there a pattern here?" The agent should notice, consolidate, and present.
 
-**This is the single most reinforced directive (3 reinforcements).** It governs the entire posture of the collaboration.
+**This was the most reinforced directive in the source engagement (3 reinforcements).** It governs the entire posture of the collaboration.
 
 **Concrete examples**:
 - After tracing a mechanism through code: proactively summarize and ask to mark as validated
@@ -133,3 +133,15 @@ These are small but high-impact patterns learned through feedback:
 | Cross-references | `[technical]` | Dedicated section at document end; relative paths; brief context per link |
 | Scoped IDs need source context | `[technical]` | IDs (like F4, B2) are meaningful only within their source document; cite with descriptive text elsewhere |
 | Results over process | `[technical]` | Describe findings as they stand, not the journey to them |
+
+---
+
+## Cross-References
+
+- Proactive engagement and evidence presentation → `04-EVIDENCE-AND-VALIDATION.md` (Recognizing Validation Opportunities, Presenting Findings)
+- Mutual fallibility and the correction protocol → `03-SELF-IMPROVEMENT.md` (Learning From Corrections)
+- Generalization awareness (directive application vs. pattern extraction) → `03-SELF-IMPROVEMENT.md` (Two Kinds of Generalization)
+- Directive confidence scaling and reinforcement tracking → `01-MEMORY-SYSTEM.md` (WORKING_STYLE section)
+- Communication micro-rules in document context → `05-CODE-AND-DOCUMENTS.md` (Document Authoring Principles)
+- Scoped IDs failure mode → `06-FAILURE-MODES.md` (F9: Scoped IDs Out of Context)
+- The human's role evolves through phases → `08-BOOTSTRAPPING.md` (The Trajectory), `07-META-LEARNINGS.md` §12

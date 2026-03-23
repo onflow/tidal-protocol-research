@@ -7,9 +7,11 @@ Extract everything learned during a 7-week human-AI collaboration (code audit do
 ## Source Material
 
 All learnings were developed through iterative feedback with a technical human collaborator ("the auditor"). Sources:
-- `memory/WORKING_STYLE.md` — 40+ directives with reinforcement tracking
+- `memory/WORKING_STYLE.md` — ~35 directives with reinforcement tracking
 - `memory/SESSION_LOG.md` — 18 session entries documenting evolution
 - `memory/CHANGELOG.md` — directive lifecycle and meta-learnings
+- `memory/TECHNICAL.md` — domain knowledge structure, status conventions, verification queue
+- `memory/CONCLUSIONS.md` — validated/invalidated findings, status tiers, change log
 - `.cursor/rules/*.mdc` — system-level rules (4 files)
 - `AUDITOR_GUIDE.md` — human-facing description of the system
 
@@ -49,4 +51,10 @@ Three generality tiers:
 2. **Technical collaboration** — applies when the joint task involves code/analysis (e.g., "verify code references after edits")
 3. **Long-running engagement** — applies when the collaboration spans multiple sessions with accumulated state (e.g., "memory maintenance protocol")
 
-Each directive is tagged with its tier.
+Each directive is tagged with its tier. (Tier tags apply to directive-level content; meta-observations and process descriptions in files like 03 and 07 may not carry tier tags.)
+
+## Status
+
+This document serves two purposes:
+1. **Archival**: Records the rationale and plan for this specific extraction. Does not need to be maintained as the output files evolve.
+2. **Template**: For future extraction efforts in new domains, use this as a starting point — replace domain-specific references with the new context.

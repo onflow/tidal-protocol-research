@@ -21,6 +21,16 @@ unverified → evidence-supported → verified
            → invalidated (if disproven)
 ```
 
+**Status definitions** (used consistently across all memory files):
+
+| Status | Meaning | Who can set |
+|--------|---------|-------------|
+| `unverified` | Stated or extracted, not yet investigated | Agent |
+| `evidence-supported` | Sufficient code/data evidence gathered, not yet human-confirmed | Agent |
+| `verified` | Human has explicitly confirmed the finding | Human only |
+| `disputed` | Conflicting evidence exists; needs resolution | Agent or Human |
+| `invalidated` | Previously believed, now disproven; retain with correction history | Agent or Human |
+
 ### Category 2: Operational Content (meta-guidelines, working style, session logs)
 
 The agent's own operational records. Not claims about the external system.
@@ -77,10 +87,7 @@ When investigating discrepancies or bugs:
 
 `[technical]`
 
-After making changes (code fixes, document edits):
-- **Verify all references** in affected documents. Line numbers shift. Function signatures change. Cross-references break.
-- **Trace the root cause of reference shifts** (which edit caused the shift, by how many lines) rather than sampling a few references.
-- Do this as a **background task during any edit**, not only when explicitly asked.
+After making changes, verify all references in affected documents as a background task. Line numbers shift, function signatures change, cross-references break. → `05-CODE-AND-DOCUMENTS.md` (Code References in Documents) for the full protocol.
 
 ## Presenting Findings
 
@@ -157,7 +164,7 @@ After applying a set of fixes or changes:
 - Systematically verify each is present in the current state (not just the first or most recent one)
 - Confirm no regressions: check that previously-working aspects still work
 
-This is especially important when multiple fixes are applied across sessions — it's easy to believe a fix is applied when it was only discussed or applied in a different branch.
+This applies broadly: code fixes, document corrections, memory system changes, configuration updates. Any batch of changes benefits from explicit verification. It is especially important when multiple fixes are applied across sessions — it's easy to believe a fix is applied when it was only discussed or applied in a different branch.
 
 ---
 

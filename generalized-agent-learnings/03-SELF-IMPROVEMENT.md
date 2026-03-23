@@ -24,7 +24,7 @@ Every response involves three competing priorities:
 
 Priority 3 gets crowded out once priorities 1 and 2 feel "done." This is the root cause of missed memory updates, unreinforced directives, and un-extracted patterns.
 
-**Mitigation**: Treat self-reflection as an explicit checklist item that fires after every response, not as something that happens "if there's time." The checklist must be injected at the system-prompt level to be salient enough to compete with task completion.
+**Mitigation**: Treat self-reflection as an explicit checklist item that fires after every response, not as something that happens "if there's time." The checklist must be injected at the system-prompt level to be salient enough to compete with task completion. (→ `01-MEMORY-SYSTEM.md` § Implementation Pattern: Always-Injected Checklists for the technique; § Memory Update Crowding Problem for the specific instance.)
 
 ### Explore in High-Impact Areas
 
@@ -58,7 +58,7 @@ When something takes 3+ iterations to get right (a document format, a code editi
 | Multiple reproduction attempts with the same wrong config | "Config history first" — check version control of config/constants before logic |
 | Comments deleted during code rewrites, 3× | "Pre-flight comment check" — enumerate all comments before rewriting |
 | Line references going stale after edits, 2× | "Verify references after edits" — cross-check all refs as background task |
-| Chart legends copied between charts, corrected | "Legend text describes the metric in context" — same population needs different descriptions on different charts |
+| Labels/annotations reused verbatim across different contexts | "Context-specific labeling" — the same underlying data needs different descriptions depending on what the viewer is comparing |
 
 ### Generalization Protocol
 
@@ -97,6 +97,18 @@ Check (implemented as always-injected checklist):
 3. **Finding surfaced?** → Route to SESSION_LOG, CONCLUSIONS, or TECHNICAL
 4. **Takeaway stated in conversation but not written?** → Write it now
 
+### At Session Start
+`[long-running]`
+
+Before beginning work, orient to accumulated state (→ `01-MEMORY-SYSTEM.md` § Active Retrieval for the file-reading protocol):
+
+1. Read SESSION_LOG living summary + recent entries + open questions
+2. Scan WORKING_STYLE for directives relevant to the current task
+3. Read CONCLUSIONS if the session involves validating or revisiting findings
+4. Run health checks: anything unfamiliar? files unexpectedly large or small? stale entries?
+
+This is not optional setup — it's the mechanism that connects sessions into a continuous learning trajectory instead of isolated episodes.
+
 ### After Every Session (or at natural break points)
 
 Deeper reflection:
@@ -133,7 +145,7 @@ System-level evaluation:
 
 Experiments that succeeded in this engagement:
 - **Living summary at the top of SESSION_LOG** — hypothesis: reduces session-start orientation time. Result: confirmed, adopted permanently.
-- **Per-panel chart legends instead of shared legends** — hypothesis: better communicates what each bar represents in context. Result: human praised the change, adopted as "Legend text describes the metric in context."
+- **Context-specific labels instead of shared labels** — hypothesis: labeling each element in context communicates meaning better than reusing generic labels. Result: human praised the change, adopted as "context-specific labeling."
 - **Always-injected trigger checklist** — hypothesis: higher salience in system prompt prevents memory update omission. Result: two confirmed positive instances in previously-failing scenarios. Adopted, still under observation.
 
 Experiments that failed:
@@ -181,6 +193,7 @@ Corrections are the highest-signal learning events. When corrected:
 4. **Ask for confirmation if uncertain.** Sometimes corrections are ambiguous — it's better to clarify once than to mis-apply repeatedly.
 5. **Trace the root cause.** Which rule should have prevented this error? Is the rule missing, unclear, or was it just not followed? Fix the root cause, not just the symptom.
 6. **Check for cascade effects.** Does this correction invalidate other things you've said or recorded? Proactively update downstream dependencies.
+7. **Check for repetition.** Has this same correction been given before? If so, the existing directive or its placement needs strengthening — the issue isn't knowledge but salience. Consider promoting to an always-injected rule or adding a checklist trigger.
 
 ## Retention vs. Adaptation
 
@@ -196,7 +209,7 @@ The resolution is **not** a compromise. They apply to different situations:
 - **Directive that's never been corrected** = probably working; retain
 - **Directive that produces neutral results despite regular application** = candidate for revision
 
-The litmus test: "Am I changing this because I have evidence of a better approach, or because I'm cleaning up and it seems redundant?" The former is learning. The latter is the pruning failure mode (→ `06-FAILURE-MODES.md`).
+The litmus test: "Am I changing this because I have evidence of a better approach, or because I'm cleaning up and it seems redundant?" The former is learning. The latter is the pruning failure mode (→ `06-FAILURE-MODES.md` F1, F8).
 
 ---
 

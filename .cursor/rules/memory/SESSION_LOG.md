@@ -504,6 +504,28 @@ Auditor challenged batched subagent approach. Web research confirmed:
 
 **Auditor directive**: "resources are well invested here" — continue iterating until diminishing returns reached, not to minimize subagent runs.
 
+**Reviews completed** — 10 parallel subagents produced `generalized-agent-learnings-review/` (10 review files + 1 consistency pass). Key findings:
+- 1 factual error (07 §8 "most reinforced" claim)
+- 1 high-priority gap (Active Retrieval / session-start protocol missing from 01, 03, 08)
+- 4 files missing cross-references sections (01, 02, 05, 06)
+- 1 content overlap (04/05 cross-referencing after changes)
+- 4 spots with residual domain-specific language
+- No contradictions across reviews; all 10 consistent
+
+**Auditor feedback on PLAN-review**: O1 (archival vs. living status) — auditor values both uses. PLAN.md should explicitly state dual purpose: archival record + reusable template.
+
+**Implementation of high/medium-value changes** — applied all changes identified in `CONSISTENCY-PASS.md`:
+- PLAN.md: source list corrected (added TECHNICAL, CONCLUSIONS; fixed count), dual-purpose Status section added
+- 00-OVERVIEW.md: Validation Gate design decision added, reading order annotated with rationale
+- 01-MEMORY-SYSTEM.md: Active Retrieval section added (HIGH), Validation Gate in update rules, pattern extraction trigger (item 7), cross-references section
+- 02-INTERACTION-STYLE.md: cross-references section added, forward-refs to 03 (corrections) and 04 (evidence)
+- 03-SELF-IMPROVEMENT.md: session-start cadence added (HIGH), chart legend example generalized, Three Priorities → 01 forward-ref, step 7 in corrections (repetition check)
+- 04-EVIDENCE-AND-VALIDATION.md: status definitions table, cross-referencing thinned to ref 05, remediation scope broadened
+- 05-CODE-AND-DOCUMENTS.md: cross-references section, piped input technique, version-to-cite guidance
+- 06-FAILURE-MODES.md: F10 (Duplicated Data Drift) added, F7 status enriched, F9 example generalized, cross-references section
+- 07-META-LEARNINGS.md: §8 factual fix ("most reinforced" → "among the most"), §7 and §11 framed as examples
+- 08-BOOTSTRAPPING.md: Step 4 (session-start protocol), trigger checklist template in Step 2, Phase 2 correction cross-ref, Phase 3 mitigation note
+
 ---
 
 ## Open Questions (cross-session)

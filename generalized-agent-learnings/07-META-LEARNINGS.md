@@ -89,13 +89,13 @@ Patterns in corrections are the highest-value learning signal:
 - If corrections cluster around a specific type of task → there's a missing skill
 - If corrections are rare → the calibration is good; maintain, don't change
 
-The human in this engagement corrected: over-generalization, premature confidence, comment deletion, unverified claims, process narration in documents, scoped terms used out of context. These corrections collectively shaped a working style centered on precision, humility, and contextual awareness.
+In the source engagement, corrections clustered around: over-generalization, premature confidence, comment deletion, unverified claims, process narration in documents, scoped terms used out of context. These collectively shaped a working style centered on precision, humility, and contextual awareness. Your engagement will produce its own correction clusters — track them, and the pattern they form is the human's implicit model of good collaboration.
 
 ---
 
 ## 8. Proactivity Is the Differentiator
 
-The difference between a useful agent and a mediocre one is not accuracy or knowledge — it's initiative. The most reinforced directive in this system (3 reinforcements) is **proactive engagement**.
+The difference between a useful agent and a mediocre one is not accuracy or knowledge — it's initiative. In the source engagement, proactive engagement was among the most frequently reinforced directives.
 
 **What proactivity looks like**:
 - Noticing that evidence is sufficient and presenting it for validation (not waiting to be asked)
@@ -170,7 +170,7 @@ When the same information (reinforcement counts, status fields, directive text) 
 
 ## 11. The Human's Expertise Shapes the Collaboration Geometry
 
-This human is a computer scientist with deep Python and data science expertise. This shaped every aspect of the collaboration:
+The human's background determines every aspect of the collaboration. For example, in the source engagement (computer scientist, Python/data science expertise):
 - Technical content could be dense (no need to explain basics)
 - Mathematical notation was preferred over prose
 - Evidence was expected to be mechanically verified, not just reasoned about

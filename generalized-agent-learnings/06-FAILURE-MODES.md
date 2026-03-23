@@ -107,7 +107,7 @@ These are not hypothetical. Every failure mode listed here actually occurred and
 - **Always-injected trigger checklist** that fires after every response.
 - First trigger: "Did the human give positive or negative feedback?" → Update WORKING_STYLE.
 
-**Status**: Partially solved. Two confirmed positive instances of the checklist working. Not yet proven reliable under all conditions.
+**Status**: Partially solved. The always-injected checklist improved compliance (two confirmed positive instances in previously-failing scenarios). Not yet proven reliable under high context pressure or long sessions. If effectiveness degrades, consider: more specific triggers, a dedicated "memory update" response phase, or making the checklist shorter.
 
 **Generality**: `[long-running]` — applies to any system with persistent learning that depends on processing feedback signals.
 
@@ -135,9 +135,24 @@ These are not hypothetical. Every failure mode listed here actually occurred and
 
 **Prevention**:
 - **Scoped IDs need source context.** Outside the defining document: use descriptive text + source reference.
-- Example: "the liquidation cascading bug (→ analysis_doc.md §F4)" not just "F4."
+- Example: "the resource-leak failure mode (→ analysis_doc.md §F4)" not just "F4."
 
 **Generality**: `[technical]` — applies to any multi-document system with cross-references.
+
+---
+
+## F10: Duplicated Data Drift
+
+**What happened**: The same tracking metadata (reinforcement counts, status fields) existed in two files — system-prompt rules and the working-style file. Within weeks, the copies diverged because only one was updated consistently.
+
+**Root cause**: Duplication creates a maintenance obligation. Each update must touch all copies. In practice, one copy gets updated and the others drift silently until the inconsistency causes confusion.
+
+**Prevention**:
+- **Single source of truth.** Designate one location as authoritative and make others reference it.
+- **If duplication is truly necessary** (e.g., both copies serve distinct consumers), log the duplication explicitly and add a periodic sync check to the health check protocol.
+- **Before adding the same data to a second location**, ask: "Is there a way to reference the first location instead?"
+
+**Generality**: `[long-running]` — applies to any persistent knowledge system with multiple representation layers.
 
 ---
 
@@ -166,3 +181,18 @@ The meta-lesson: **similarity of surface form does not imply equivalence of func
 | F7 | Memory update omission | Three Priorities Problem | `[long-running]` |
 | F8 | Purpose conflation | Surface similarity ≠ functional equivalence | `[universal]` |
 | F9 | Scoped IDs out of context | Convenience over clarity | `[technical]` |
+| F10 | Duplicated data drift | Duplication without sync protocol | `[long-running]` |
+
+---
+
+## Cross-References
+
+- F1 (Compaction Catastrophe) prevention protocol → `01-MEMORY-SYSTEM.md` (Maintenance Protocol)
+- F2 (Clean-Slate Rewriting) prevention → `05-CODE-AND-DOCUMENTS.md` (Minimal Invasiveness, Comment Handling)
+- F3 (Exhaustive Claims) full treatment → `04-EVIDENCE-AND-VALIDATION.md` (Exhaustive Claims Require Exhaustive Verification)
+- F5 (Stale Cross-References) protocol → `05-CODE-AND-DOCUMENTS.md` (Code References in Documents)
+- F6 (Premature Validation) design rationale → `04-EVIDENCE-AND-VALIDATION.md` (The Validation Gate)
+- F7 (Memory Update Omission) and the Three Priorities Problem → `03-SELF-IMPROVEMENT.md` (The Three Priorities Problem), `01-MEMORY-SYSTEM.md` (Memory Update Crowding)
+- F9 (Scoped IDs) communication rule → `02-INTERACTION-STYLE.md` (Communication Micro-Rules)
+- F10 (Duplicated Data Drift) meta-learning → `07-META-LEARNINGS.md` §10c
+- Cross-cutting pattern (surface similarity ≠ functional equivalence) → `07-META-LEARNINGS.md` §6 (Mixing Purposes)

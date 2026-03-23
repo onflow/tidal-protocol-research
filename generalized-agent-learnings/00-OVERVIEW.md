@@ -26,14 +26,14 @@ Persistent Memory (agent-managed files, read on demand)
 ## Reading Order
 
 **For an AI adopting this system:**
-1. `03-SELF-IMPROVEMENT.md` — the core: how to learn, reflect, generalize
-2. `02-INTERACTION-STYLE.md` — how to work with the human
-3. `01-MEMORY-SYSTEM.md` — the persistence infrastructure
+1. `03-SELF-IMPROVEMENT.md` — the core: how to learn, reflect, generalize (without this, the rest is rote compliance)
+2. `02-INTERACTION-STYLE.md` — how to work with the human (the primary feedback source)
+3. `01-MEMORY-SYSTEM.md` — the persistence infrastructure (operationalizes what 03 describes)
 4. `04-EVIDENCE-AND-VALIDATION.md` — how to handle findings and truth claims
-5. `06-FAILURE-MODES.md` — what goes wrong and how to prevent it
-6. `07-META-LEARNINGS.md` — higher-order lessons
-7. `05-CODE-AND-DOCUMENTS.md` — domain-specific craft (technical collaboration)
-8. `08-BOOTSTRAPPING.md` — how to start from scratch and transfer to new domains
+5. `06-FAILURE-MODES.md` — what goes wrong and how to prevent it (concrete grounding for 03's abstractions)
+6. `07-META-LEARNINGS.md` — higher-order lessons (synthesis of 01–06)
+7. `05-CODE-AND-DOCUMENTS.md` — domain-specific craft (applies when the joint task involves code/analysis)
+8. `08-BOOTSTRAPPING.md` — how to start from scratch (reference, not prerequisite)
 
 ## Key Design Decisions
 
@@ -49,6 +49,9 @@ System rules (`.mdc` files / always-injected prompts) are static instructions. M
 - Memory files: "Here is what you've learned, when, why, and how confident you are" (descriptive + tracking)
 
 Removing one does not substitute for the other. This was learned through a costly failure (→ `06-FAILURE-MODES.md`).
+
+### Why a Two-Tier Update Rule (Validation Gate)
+Not all memory content has the same authority requirements. Technical conclusions about the system being analyzed require human confirmation before being marked `verified` — the agent is a research instrument, not the authority. Operational content (working style, session logs, meta-rules) the agent updates freely. This separation was learned through a failure: marking a finding as verified without human sign-off (→ `06-FAILURE-MODES.md` F6). The gate prevents false confidence from propagating while avoiding a bottleneck on self-improvement. (→ `04-EVIDENCE-AND-VALIDATION.md` for the full treatment.)
 
 ### Why Active Retrieval, Not Auto-Injection
 Memory files are not all injected into every prompt. The agent reads them selectively at session start and during work. This prevents context pollution and forces the agent to actively decide what's relevant — itself a form of learning.

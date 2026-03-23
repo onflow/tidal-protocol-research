@@ -26,7 +26,7 @@ The collaboration passes through distinct phases. Knowing which phase you're in 
 **What happens**: The most productive learning period. The human corrects frequently. Directives accumulate and start getting reinforced. Working style stabilizes.
 
 **Agent tasks**:
-1. Process corrections into directive updates (this is the primary learning mechanism)
+1. Process corrections into directive updates — this is the primary learning mechanism (→ `03-SELF-IMPROVEMENT.md` § Learning From Corrections for the full protocol)
 2. Start extracting patterns from repeated friction (3-iteration trigger)
 3. Build domain knowledge through exploration and validation
 4. Calibrate information density and abstraction level to the human
@@ -47,7 +47,7 @@ The collaboration passes through distinct phases. Knowing which phase you're in 
 
 **Characteristics**: Lower correction rate. Higher density of technical output. The human starts trusting the agent to work more autonomously. Memory updates compete with task completion for attention (→ Three Priorities Problem in `03-SELF-IMPROVEMENT.md`).
 
-**Common errors**: Neglecting memory updates because the technical work feels more urgent. Compacting memory as a side effect of other edits. Losing track of open questions from earlier sessions.
+**Common errors**: Neglecting memory updates because the technical work feels more urgent (→ the Three Priorities Problem; mitigate with the always-injected trigger checklist from `01-MEMORY-SYSTEM.md`). Compacting memory as a side effect of other edits. Losing track of open questions from earlier sessions.
 
 ### Phase 4: Meta-Refinement (sessions 15+)
 
@@ -176,7 +176,17 @@ Four always-injected rule files:
 
 3. **Domain Structure**: How to organize technical knowledge for this specific domain. Categories, formats, status conventions. Replace per project. (→ `01-MEMORY-SYSTEM.md` TECHNICAL section for format guidance)
 
-4. **Memory Update Triggers**: The always-injected checklist that fires after every response. Four checks: feedback received? artifact created? finding surfaced? takeaway unstated in memory? (→ `01-MEMORY-SYSTEM.md` Memory Update Crowding for rationale)
+4. **Memory Update Triggers**: The always-injected checklist that fires after every response. Template:
+
+```
+After completing each response, check:
+1. Did the human give positive or negative feedback? → Update WORKING_STYLE
+2. Did I create or update an artifact? → Update SESSION_LOG
+3. Did I surface a new finding? → Route to SESSION_LOG, CONCLUSIONS, or TECHNICAL
+4. Did I state a takeaway without writing it to memory? → Write it now
+```
+
+(→ `01-MEMORY-SYSTEM.md` Memory Update Crowding for rationale and design principles)
 
 ### Step 3: First Interaction
 
@@ -188,6 +198,17 @@ In the first session:
 5. Present initial understanding and ask for correction/confirmation
 
 **Don't try to be comprehensive in session 1.** The goal is to establish the infrastructure and begin calibration, not to complete the analysis.
+
+### Step 4: Establish Session-Start Protocol
+
+From session 2 onward, begin every session by orienting to accumulated state:
+
+1. Read SESSION_LOG living summary + last 1–2 entries + open questions
+2. Scan WORKING_STYLE for relevant directives
+3. Run health checks (anything unfamiliar? files unexpectedly large/small? stale entries?)
+4. If any health check raises concern, request dedicated maintenance time rather than fixing as a side effect
+
+This protocol converts isolated sessions into a continuous trajectory. Without it, sessions drift apart and prior learning goes unused. (→ `01-MEMORY-SYSTEM.md` § Active Retrieval for the full file-reading protocol; `03-SELF-IMPROVEMENT.md` § At Session Start for the reflection perspective.)
 
 ## Content Hierarchy
 
