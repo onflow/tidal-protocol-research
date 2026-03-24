@@ -100,11 +100,26 @@ Last updated: 2026-03-03
 **Code ref**: `moet.py`
 **Status**: unverified
 
+## Key Distinctions
+
+### Liquidated Collateral vs. Economic Loss (2026-03-24, auditor-directed)
+
+In AAVE-style liquidation, "collateral liquidated" and "economic loss" are fundamentally different quantities:
+
+- **Collateral liquidated (gross):** The dollar value of collateral sold in the forced sale. In the simulation, this is the `Cost_of_Liquidation` CSV field (~$34,600/agent in BSM).
+- **Debt repaid (value-neutral component):** The portion of the forced sale proceeds that repay outstanding debt. This is NOT a loss: collateral leaves, debt is reduced by a corresponding amount. Equals `Cost_of_Liquidation / 1.05`.
+- **Liquidation penalty (direct loss):** The 5% premium on the forced sale. This IS realized economic damage. Equals `Liquidation_Penalties` CSV field (~$1,680/agent in BSM). Verify: `Liquidation_Penalties ≈ Cost_of_Liquidation × 0.05 / 1.05`.
+- **Position reduction (structural):** After liquidation, the agent holds less collateral. This permanently reduces their exposure, meaning reduced participation in any subsequent price recovery. This is a conditional cost (depends on future price movement), not a realized loss.
+
+**Rule:** Never describe the full `Cost_of_Liquidation` as a "loss" or "cost" without qualification. The appropriate framing is "forced collateral sale" or "collateral liquidated." The actual economic loss is the penalty component plus any recovery opportunity cost. Conflating gross liquidation value with net loss overstates the direct damage by ~20x and misrepresents a core protocol comparison metric.
+
+**Applies to:** All simulation analysis, audit documents, chart labeling, and Primer text involving AAVE or any liquidation-based protocol comparison.
+
 ## Assumptions
 
 | Assumption | Basis | Status | Notes |
 |------------|-------|--------|-------|
-| Liquidation penalty is 5% | Codebase exploration | stated | Needs verification in code |
+| Liquidation penalty is 5% | Codebase exploration; confirmed in BSM CSV data (2026-03-24) | evidence-supported | `Liquidation_Penalties / Cost_of_Liquidation ≈ 0.0476 = 5%/1.05` |
 | Reserve ratio target is 10% | Codebase exploration | stated | Needs verification |
 | Simulation runs minute-by-minute | Code trace of engine loop | verified | `high_tide_vault_engine.py:169`; agents decide every minute |
 | BTC liquidation threshold is 0.85 | `high_tide_agent.py:487` | verified | Hardcoded in `_calculate_effective_collateral_value` |

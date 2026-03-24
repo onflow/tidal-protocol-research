@@ -121,7 +121,7 @@ High Tide Protocol consistently outperformed simple BTC holding:
 \centering
 \includegraphics[width=0.8\textwidth]{tidal_protocol_sim/results/Full_Year_2024_BTC_Simulation/charts/yield_strategy_comparison.png}
 \caption{Yield Strategy Comparison: High Tide Protocol vs Base 10% APR Yield}
-\end{figure>
+\end{figure}
 
 ### Yield Enhancement Results
 

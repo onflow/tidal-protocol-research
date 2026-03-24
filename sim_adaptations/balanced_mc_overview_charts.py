@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 DEFAULT_RESULTS_DIR = "tidal_protocol_sim/results_commit-ba544b1/Balanced_Scenario_Monte_Carlo"
-DEFAULT_DPI = 600
+DEFAULT_DPI = 1000
 
 
 # ---------------------------------------------------------------------------
@@ -225,6 +225,16 @@ def _run_label(scenario: str) -> str:
 
 def plot_overview_bars(overview: pd.DataFrame, aave_surv_pct: float,
                       output_path: Path) -> None:
+    """Two-panel bar chart: survival rate (left) and liquidated collateral (right).
+
+    Layout techniques:
+    - X-tick labels hidden; bar identity conveyed via per-panel legend boxes
+      placed below each chart (bbox_to_anchor in axes coords).
+    - Right panel y-axis on right side — panels read outward from center.
+    - Error bars drawn selectively via ax.errorbar() rather than ax.bar(yerr=...)
+      to avoid matplotlib drawing cap remnants on zero-error bars.
+    - FCM $0 bar in right panel made visible via colored hlines at baseline.
+    """
     fig, axes = plt.subplots(1, 2, figsize=(10, 5.5),
                               gridspec_kw={"width_ratios": [1, 1.2]})
 
@@ -234,12 +244,20 @@ def plot_overview_bars(overview: pd.DataFrame, aave_surv_pct: float,
     aave_liq_pct = 100 - aave_surv_pct
 
     # --- Panel 1: Survival Rate (FCM "no collateral liquidation" only + AAVE) ---
+    # FCM is 100% across all runs (zero variance) — no error bar.
+    # AAVE varies across runs — error bar on AAVE only (index 1).
     ax = axes[0]
-    labels = ["FCM", "AAVE"]
+    labels = ["FCM", "AAVE"]  # bar x-positions: 0=FCM, 1=AAVE
     vals = [ht["mean_surv_no_liq"] * 100, aave["mean_surv_rebal"] * 100]
-    errs = [ht["std_surv_no_liq"] * 100, aave["std_surv_rebal"] * 100]
     colors = [FCM_COLOR, AAVE_COLOR]
-    bars = ax.bar(labels, vals, yerr=errs, capsize=4, color=colors, edgecolor="white", width=0.5)
+    bars = ax.bar(labels, vals, color=colors, edgecolor="white", width=0.5)
+    # `pyplot.errorbar` is designed as a general-purpose function for plotting data points with error bar. 
+    # We re-use this function here to selectively plot error bars for the `AAVE` survival rate. 
+    # The datapoint itself is already represented by the Aave bar, so we only need to plot the errors.
+    # Hence we use the parameter fmt=`none` to suppresses the point marker and draw only whisker+caps.
+    # errorbar(x, y, yerr): x is bar position, y is bar height (whisker center),
+    ax.errorbar(1, vals[1], yerr=aave["std_surv_rebal"] * 100,
+                fmt="none", capsize=4, color="black")
     ax.set_ylabel("Survival Rate [%]")
     ax.set_title("Survival Rate", fontsize=12, pad=18)
     ax.text(0.5, 1.02, "(fraction of agents with principal unaffected by liquidations)",
@@ -260,12 +278,21 @@ def plot_overview_bars(overview: pd.DataFrame, aave_surv_pct: float,
               bbox_to_anchor=(0.5, -0.05), frameon=True, edgecolor="0.8", fancybox=False)
 
     # --- Panel 2: Liquidated Collateral Value (per agent) ---
+    # Three bars: FCM ($0), AAVE all-agents avg, AAVE liquidated-only avg.
     ax = axes[1]
-    labels2 = ["FCM", "AAVE\n(all agents)", "AAVE\n(liquidated\nonly)"]
+    labels2 = ["FCM", "AAVE\n(all agents)", "AAVE\n(liquidated\nonly)"]  # x: 0, 1, 2
     vals2 = [ht["mean_liq_all"], aave["mean_liq_all"], aave["mean_liq_liquidated"]]
-    errs2 = [ht["std_liq_all"], aave["std_liq_all"], aave["std_liq_liquidated"]]
     colors2 = [FCM_COLOR, AAVE_COLOR, AAVE_DARK_COLOR]
-    bars2 = ax.bar(labels2, vals2, yerr=errs2, capsize=4, color=colors2, edgecolor="white", width=0.6)
+    bars2 = ax.bar(labels2, vals2, color=colors2, edgecolor="white", width=0.6)
+    # Error bars on 0=FCM and 1=AAVE-all only; 2=AAVE-liquidated-only omitted
+    # (near-zero variance — all liquidated agents face same 50% debt + 5% penalty).
+    # `pyplot.errorbar` is designed as a general-purpose function for plotting data points with error bar. 
+    # We re-use this function here to selectively plot error bars for the `AAVE` survival rate. 
+    # The datapoint itself is already represented by the Aave bar, so we only need to plot the errors.
+    # Hence we use the parameter fmt=`none` to suppresses the point marker and draw only whisker+caps.
+    # errorbar(x, y, yerr): x is bar position, y is bar height (whisker center),
+    for i, err in [(0, ht["std_liq_all"]), (1, aave["std_liq_all"])]:
+        ax.errorbar(i, vals2[i], yerr=err, fmt="none", capsize=4, color="black")
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
     ax.set_ylabel("Average Liquidated Collateral [$/agent]")

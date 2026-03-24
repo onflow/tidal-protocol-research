@@ -449,9 +449,14 @@ All other refs (19+) confirmed correct. New directive extracted: "Verify code re
 - AAVE entries: parallel structure with percentage at end
 - Legend kept inside chart (sufficient space at top)
 
+**Additional polish:**
+- Selective error bars: bars drawn without `yerr`, then `ax.errorbar(x, y, yerr=..., fmt="none")` called only for bars that need them. Avoids matplotlib drawing cap remnants on zero-variance bars. `fmt="none"` suppresses marker/line, drawing only whisker+caps.
+- FCM survival error bar removed (zero variance); AAVE-liquidated-only error bar removed (near-zero variance — same 50% debt + 5% penalty mechanics for all liquidated agents)
+- Docstring added to `plot_overview_bars` documenting layout techniques; inline comments document x-position mapping and errorbar parameter semantics
+
 **Design principle applied:** Legend text should describe what the bar represents *in the context of the chart's metric*, not repeat the same framing across all charts. The same sub-population can need different descriptions depending on whether the chart shows survival, collateral loss, or position degradation.
 
-→ Artifacts: `overview_bars.png`, `position_degradation.png` (both regenerated)
+→ Artifacts: `overview_bars.png`, `position_degradation.png` (both regenerated), `balanced_mc_overview_charts.py` (documented)
 
 ---
 
