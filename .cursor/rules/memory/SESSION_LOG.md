@@ -528,6 +528,26 @@ Auditor challenged batched subagent approach. Web research confirmed:
 
 ---
 
+### Session 2026-03-23: Monte Carlo agent initialization audit + doc correction
+
+**Auditor-requested exhaustive analysis**: How much debt and collateral does each agent start with in `balanced_scenario_monte_carlo.py`?
+
+**Findings — initialization traced through full call chain:**
+- Both HT and AAVE agents share identical initialization (`AaveAgentState` inherits `HighTideAgentState.__init__`)
+- Collateral: 1 BTC = $100,000 (hardcoded at `high_tide_agent.py:33`)
+- Debt: `$85,000 / initial_hf` where `initial_hf ~ U(1.25, 1.45)` → range $58,621–$68,000, E[debt] ≈ $63,079
+- `initial_balance = 100_000.0` (constructor default) is used as BTC price, not as a dollar balance
+
+**Doc correction — `SIMULATION_COMPARISON_monte_carlo_vs_flash_crash.md`:**
+- System debt was listed as "$65k per agent / $325k per protocol / $650k total" — corrected to ~$63k / ~$315k / ~$630k with derivation formula
+- Interest figure corrected: $0.74 → $0.72
+
+**CSV reporting bug noted**: `balanced_scenario_monte_carlo.py:2295` hardcodes `Current_MOET_Debt: 0.0` for AAVE agents with comment "AAVE agents don't have MOET debt" — incorrect; AAVE agents do borrow MOET via inherited `HighTideAgentState` init. Affects CSV output only, not simulation.
+
+**Flash crash cross-check**: $133k/agent confirmed correct (explicit `$20M / 150` target at `flash_crash_simulation.py:54,712,728`). Different initialization path: `_setup_large_system_positions` overrides agent state directly rather than deriving from HF.
+
+---
+
 ## Open Questions (cross-session)
 
 | ID | Question | Since | Refs |

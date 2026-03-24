@@ -1,6 +1,6 @@
 # Simulation Comparison: `balanced_scenario_monte_carlo.py` vs `run_flash_crash.py`
 
-**Date:** 2026-03-10
+**Date:** 2026-03-23
 **Commit:** reference `ba544b1` (on `main`)
 
 ---
@@ -18,7 +18,7 @@
 | **Protocols**           | Both HT and AAVE                                                                                                                    | HT only                                                                                  |
 | **Duration**            | 60 minutes                                                                                                                          | 2,880 minutes (2 days)                                                                   |
 | **Agents**              | 5 per protocol per scenario, heterogeneous HFs (uniform 1.25–1.45)                                                                  | 150 HT, homogeneous (all HF: 1.15 initial / 1.05 rebalancing / 1.08 target)              |
-| **System debt**         | ~$325k per protocol (5 × $65k); ~$650k total across both                                                                            | $20M (150 × $133k)                                                                       |
+| **System debt**         | ~$315k per protocol (5 × ~$63k avg); ~$630k total across both. Per-agent debt = $85k / initial_hf (range $59k–$68k).                | $20M (150 × $133k)                                                                       |
 | **BTC price**           | Synthetic linear decline ($100k → $76.3k in Primer-compatible config; committed ba544b1 code uses $90k — see D7), engine-controlled | Deterministic crash (5-min drop → floor → exponential recovery), sim-controlled override |
 | **Stressors**           | BTC decline only                                                                                                                    | BTC crash + oracle manipulation + liquidity evaporation + forced liquidations            |
 | **Market structure**    | None — pool arbing disabled, no arbitrageurs                                                                                        | Explicit: ALM/Algo rebalancers, 10 MOET arb agents, liquidity throttling                 |
@@ -36,7 +36,7 @@
 
 **2. Single vs compound threat model.** The Monte Carlo sim has one stressor (BTC decline); everything else is held constant. The flash crash layers four simultaneous stressors with feedback: BTC crash depresses HF, oracle manipulation misleads rebalancing, liquidity evaporation prevents efficient exit, forced liquidations compound losses.
 
-**3. Deterministic vs path-dependent outcomes.** In the Monte Carlo sim, outcomes are effectively decided at agent creation: given initial HFs and the fixed BTC endpoint, survival is a threshold check (`initial_HF > ~1.31`). Interest accrual over 60 min is negligible (~$0.74 on $65k debt). In the flash crash, the same initial HF for all 150 agents means outcomes depend on the interaction sequence — oracle wick timing, liquidity throttling phase, rebalancing-vs-liquidation race conditions.
+**3. Deterministic vs path-dependent outcomes.** In the Monte Carlo sim, outcomes are effectively decided at agent creation: given initial HFs and the fixed BTC endpoint, survival is a threshold check (`initial_HF > ~1.31`). Interest accrual over 60 min is negligible (~$0.72 on ~$63k avg debt). In the flash crash, the same initial HF for all 150 agents means outcomes depend on the interaction sequence — oracle wick timing, liquidity throttling phase, rebalancing-vs-liquidation race conditions.
 
 **4. Agent heterogeneity vs homogeneity.** The Monte Carlo sim uses random HFs to produce a survival *rate* (e.g., "60% survived" = 3/5 agents above threshold). The flash crash uses 150 agents with identical initial parameters. Agent-level divergence in the flash crash simulation arises from: (1) processing order, i.e. earlier agents get better pool liquidity in the $500k MOET:YT pool; (2) oracle wick timing (~12%/min probability) amplifying queue-position effects; (3) BTC recovery noise (±2%/min) propagating differently through already-diverged portfolios. Whether per-agent random draws or agent-order shuffling occur is unverified.
 
