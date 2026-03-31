@@ -163,6 +163,11 @@ class FullYearSimConfig:
         # Optimization configuration (for binary search studies)
         self.fail_fast_on_liquidation = False  # Exit immediately on first liquidation
         self.suppress_progress_output = False  # Suppress detailed progress for optimization runs
+
+        # FCM cost-estimation parameters (passed through to HighTideAgent)
+        self.check_frequency_minutes = 1    # How often to evaluate HF (FCM mode: 60)
+        self.max_rebalance_cycles = 3       # Max sell-repay cycles per trigger (FCM mode: 1)
+        self.disable_deleveraging = False   # Disable _check_deleveraging (FCM mode: True)
     
     def __setattr__(self, name, value):
         """Override setattr to sync use_advanced_moet with enable_advanced_moet_system"""
@@ -698,9 +703,10 @@ class FullYearSimulation:
         # Run the simulation with detailed tracking
         simulation_results = self._run_simulation_with_detailed_tracking(engine)
         
-        # Store simulation results
+        # Store simulation results and engine reference (for post-run agent inspection)
         self.results["simulation_results"] = simulation_results
-        
+        self.results["ht_engine"] = engine
+
         # Analyze results
         self._analyze_test_results(engine)
         
@@ -1077,10 +1083,13 @@ class FullYearSimulation:
             agent = HighTideAgent(
                 agent_id,
                 self.config.agent_initial_hf,      # 1.1 Initial HF
-                self.config.agent_rebalancing_hf,  # 1.025 Rebalancing HF  
+                self.config.agent_rebalancing_hf,  # 1.025 Rebalancing HF
                 self.config.agent_target_hf,       # 1.04 Target HF
                 initial_balance=self.config.btc_initial_price,  # CRITICAL FIX: Use 2024 BTC price
-                yield_token_pool=engine.yield_token_pool
+                yield_token_pool=engine.yield_token_pool,
+                check_frequency_minutes=getattr(self.config, 'check_frequency_minutes', 1),
+                max_rebalance_cycles=getattr(self.config, 'max_rebalance_cycles', 3),
+                disable_deleveraging=getattr(self.config, 'disable_deleveraging', False),
             )
             agents.append(agent)
             
