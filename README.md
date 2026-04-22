@@ -1,4 +1,4 @@
-# Tidal Protocol Simulation System
+# tidal-protocol-research — Consumer DeFi Lending Research for Flow
 
 A comprehensive DeFi lending protocol simulation and analysis framework that models sophisticated lending strategies, liquidation mechanisms, and yield-bearing token systems with authentic Uniswap V3 mathematics and realistic agent behaviors.
 
@@ -500,3 +500,11 @@ python tidal_protocol_sim/main.py --full-suite --monte-carlo 50
 python tidal_protocol_sim/main.py --scenario BTC_Flash_Crash --detailed-analysis
 python tidal_protocol_sim/main.py --scenario MOET_Depeg_Crisis --detailed-analysis
 ```
+## About Flow
+
+This repo is part of the [Flow network](https://flow.com), a Layer 1 blockchain built for consumer applications, AI agents, and DeFi at scale.
+
+- Developer docs: https://developers.flow.com
+- Cadence language: https://cadence-lang.org
+- Community: [Flow Discord](https://discord.gg/flow) · [Flow Forum](https://forum.flow.com)
+- Governance: [Flow Improvement Proposals](https://github.com/onflow/flips)
