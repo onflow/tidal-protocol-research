@@ -500,6 +500,7 @@ python tidal_protocol_sim/main.py --full-suite --monte-carlo 50
 python tidal_protocol_sim/main.py --scenario BTC_Flash_Crash --detailed-analysis
 python tidal_protocol_sim/main.py --scenario MOET_Depeg_Crisis --detailed-analysis
 ```
+
 ## About Flow
 
 This repo is part of the [Flow network](https://flow.com), a Layer 1 blockchain built for consumer applications, AI agents, and DeFi at scale.
