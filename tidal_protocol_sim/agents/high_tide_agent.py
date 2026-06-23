@@ -87,6 +87,20 @@ class HighTideAgentState(AgentState):
         self.deleveraging_events = []  # Track deleveraging history
         self.total_deleveraging_sales = 0.0  # Total YT sold for deleveraging
         self.total_deleveraging_slippage = 0.0  # Total slippage from deleveraging chain
+
+        # Transaction-type counters (used for FCM cost estimation)
+        self.hc_no_action_count = 0   # HC: health check with no rebalance action
+        self.sr_count = 0             # SR: safety rebalance (HF < rebalancing_hf)
+        self.er_count = 0             # ER: efficiency rebalance (HF > initial_hf)
+
+        # Per-event rebalance log (FCM cost estimation detail report)
+        # Each entry: {event_id, type, minute, day, btc_price, hf_before, hf_after,
+        #              prev_type, prev_btc_price, pct_price_change_from_prev}
+        self.rebalance_event_log = []
+
+        # Hourly HF history — one entry per health-check slot (HC, SR, or ER)
+        # Each entry: {minute, hf, event_type}  where event_type is "HC", "SR", or "ER"
+        self.hf_history = []
         
 
 class HighTideAgent(BaseAgent):
@@ -94,17 +108,22 @@ class HighTideAgent(BaseAgent):
     High Tide agent with automatic yield token purchase and rebalancing
     """
     
-    def __init__(self, agent_id: str, initial_hf: float, rebalancing_hf: float, target_hf: float = None, initial_balance: float = 100_000.0, yield_token_pool=None):
+    def __init__(self, agent_id: str, initial_hf: float, rebalancing_hf: float, target_hf: float = None, initial_balance: float = 100_000.0, yield_token_pool=None, check_frequency_minutes: int = 1, max_rebalance_cycles: int = 3, disable_deleveraging: bool = False):
         super().__init__(agent_id, "high_tide_agent", initial_balance)
-        
+
         # Handle backward compatibility: if target_hf is None, use rebalancing_hf as target (old 2-factor system)
         if target_hf is None:
             target_hf = rebalancing_hf
             print(f"⚠️  Warning: {agent_id} using 2-factor compatibility mode. Consider updating to tri-health factor system.")
-        
+
         # Replace state with HighTideAgentState (tri-health factor system)
         self.state = HighTideAgentState(agent_id, initial_balance, initial_hf, rebalancing_hf, target_hf, yield_token_pool)
-        
+
+        # FCM cost-estimation parameters
+        self.check_frequency_minutes = check_frequency_minutes  # How often to evaluate HF (default: every minute)
+        self.max_rebalance_cycles = max_rebalance_cycles        # Max sell-repay cycles per trigger (default: 3)
+        self.disable_deleveraging = disable_deleveraging        # Disable _check_deleveraging for cost estimates
+
         # CRITICAL FIX: Add reference to engine for real swap recording
         self.engine = None  # Will be set by engine during initialization
         
@@ -129,56 +148,98 @@ class HighTideAgent(BaseAgent):
         3. Emergency actions if health factor critical
         """
         current_minute = protocol_state.get("current_step", 0)
-        
+
         # Update health factor
         self._update_health_factor(asset_prices)
-        
-        # Debug health factor tracking for agent2
-        
+
         # Check if we need to purchase yield tokens initially (only at minute 0)
-        if (current_minute == 0 and 
-            self.state.moet_debt > 0 and 
+        if (current_minute == 0 and
+            self.state.moet_debt > 0 and
             len(self.state.yield_token_manager.yield_tokens) == 0):
             return self._initial_yield_token_purchase(current_minute)
-        
+
         # Check if agent is trying to purchase yield tokens after minute 0
-        if (current_minute > 0 and 
-            self.state.moet_debt > 0 and 
+        if (current_minute > 0 and
+            self.state.moet_debt > 0 and
             len(self.state.yield_token_manager.yield_tokens) == 0):
             return ("no_action", {})
-        
-        # PERFORMANCE OPTIMIZATION: Check leverage opportunity every 10 minutes when HF > initial HF
-        # This allows agents to take advantage of opportunities much faster than weekly checks
-        if current_minute % 10 == 0:  # Every 10 minutes
-            if self._check_leverage_opportunity(asset_prices):
-                print(f"🔄 LEVERAGE OPPORTUNITY at minute {current_minute}: HF {self.state.health_factor:.4f} > {self.state.initial_health_factor:.4f}")
-                return self._execute_leverage_increase(asset_prices, current_minute)
-        
-        # Check if rebalancing is needed (HF below initial threshold)
-        if self._needs_rebalancing():
-            action = self._execute_rebalancing(asset_prices, current_minute)
-            # Update health factor after potential rebalancing decision
-            self._update_health_factor(asset_prices)
-            return action
-        
-        # Check for deleveraging opportunities (NEW)
-        deleveraging_action = self._check_deleveraging(asset_prices, current_minute)
-        if deleveraging_action[0] != "no_action":
-            return deleveraging_action
-        
-        # Check if emergency action needed (HF at or below 1.0)
-        # Try to sell ALL remaining yield tokens before liquidation
+
+        # Gate all HF evaluation to the configured check frequency.
+        # When check_frequency_minutes=60 (FCM mode), only act on hourly boundaries.
+        if current_minute % self.check_frequency_minutes != 0:
+            return (AgentAction.HOLD, {})
+
+        # --- From here: this is an active health-check slot ---
+
+        # Check if emergency action needed (HF at or below 1.0) — always handled immediately
         if self.state.health_factor <= 1.0:
             if self.state.yield_token_manager.yield_tokens:
-                # Sell ALL remaining yield tokens in emergency
                 return self._execute_emergency_yield_sale(current_minute)
             else:
-                # No yield tokens left, must liquidate
                 return self._emergency_liquidation_action()
-        
-        # Default action - hold position
+
+        # SR: safety rebalance — HF too low
+        if self._needs_rebalancing():
+            self.state.sr_count += 1
+            self._record_rebalance_event("SR", current_minute, asset_prices)
+            # Record pre-rebalance HF, then post-rebalance HF on next minute slot
+            self.state.hf_history.append({"minute": current_minute, "hf": self.state.health_factor, "event_type": "SR"})
+            action = self._execute_rebalancing(asset_prices, current_minute)
+            self._update_health_factor(asset_prices)
+            self.state.rebalance_event_log[-1]['hf_after'] = self.state.health_factor
+            self.state.hf_history.append({"minute": current_minute + 1, "hf": self.state.health_factor, "event_type": "SR_after"})
+            return action
+
+        # ER: efficiency rebalance — HF too high (leverage opportunity)
+        if self._check_leverage_opportunity(asset_prices):
+            self.state.er_count += 1
+            self._record_rebalance_event("ER", current_minute, asset_prices)
+            # ER targets target_health_factor exactly; hf_after is known from the math
+            self.state.rebalance_event_log[-1]['hf_after'] = self.state.target_health_factor
+            self.state.hf_history.append({"minute": current_minute, "hf": self.state.health_factor, "event_type": "ER"})
+            self.state.hf_history.append({"minute": current_minute + 1, "hf": self.state.target_health_factor, "event_type": "ER_after"})
+            print(f"🔄 LEVERAGE OPPORTUNITY at minute {current_minute}: HF {self.state.health_factor:.4f} > {self.state.initial_health_factor:.4f}")
+            return self._execute_leverage_increase(asset_prices, current_minute)
+
+        # Deleveraging (weekly harvest) — disabled when running FCM cost estimation
+        if not self.disable_deleveraging:
+            deleveraging_action = self._check_deleveraging(asset_prices, current_minute)
+            if deleveraging_action[0] != "no_action":
+                return deleveraging_action
+
+        # HC: health check with no rebalance action
+        self.state.hc_no_action_count += 1
+        self.state.hf_history.append({"minute": current_minute, "hf": self.state.health_factor, "event_type": "HC"})
         return (AgentAction.HOLD, {})
     
+    def _record_rebalance_event(self, event_type: str, current_minute: int, asset_prices: Dict[Asset, float]):
+        """Record an SR or ER event into the per-event log for the detail report.
+
+        hf_after is not known at trigger time; it is filled in retroactively when
+        the next event fires (hf_after = next event's hf_before, i.e. the settled
+        HF after 1+ hours of price movement following this rebalance).
+        """
+        log = self.state.rebalance_event_log
+        btc_price = asset_prices.get(Asset.BTC)
+
+        prev = log[-1] if log else None
+        prev_btc = prev['btc_price'] if prev else None
+        pct_change = ((btc_price / prev_btc) - 1) * 100 if prev_btc else None
+
+        log.append({
+            'event_id':                  len(log) + 1,
+            'type':                      event_type,
+            'minute':                    current_minute,
+            'day':                       current_minute // 1440 + 1,
+            'hour_of_day':               (current_minute % 1440) // 60,
+            'btc_price':                 btc_price,
+            'hf_before':                 self.state.health_factor,
+            'hf_after':                  None,   # filled when next event fires
+            'prev_type':                 prev['type'] if prev else None,
+            'prev_btc_price':            prev_btc,
+            'pct_price_change_from_prev': pct_change,
+        })
+
     def _initial_yield_token_purchase(self, current_minute: int) -> tuple:
         """Purchase yield tokens with initially borrowed MOET"""
         moet_available = self.state.borrowed_balances.get(Asset.MOET, 0.0)
@@ -223,17 +284,23 @@ class HighTideAgent(BaseAgent):
         return False
     
     def _execute_leverage_increase(self, asset_prices: Dict[Asset, float], current_minute: int) -> tuple:
-        """Increase leverage by borrowing more MOET to restore initial HF"""
+        """Increase leverage by borrowing more MOET, restoring to target_health_factor.
+
+        The ER trigger fires when HF > initial_health_factor (maxHealth = 1.5).
+        The rebalance restores to target_health_factor (1.3), NOT back to the trigger level.
+        This matches FlowCreditMarket.cdc behaviour: restoring to the trigger would
+        immediately re-fire ER on every subsequent hourly check.
+        """
         collateral_value = self._calculate_effective_collateral_value(asset_prices)
         current_debt = self.state.moet_debt
-        
-        # Calculate target debt for initial HF
-        target_debt = collateral_value / self.state.initial_health_factor
+
+        # Target is targetHealth (1.3), not the ER trigger (initial_health_factor = 1.5)
+        target_debt = collateral_value / self.state.target_health_factor
         additional_moet_needed = target_debt - current_debt
-        
+
         print(f"   💰 Collateral Value: ${collateral_value:,.2f}")
         print(f"   📊 Current Debt: ${current_debt:,.2f}")
-        print(f"   🎯 Target Debt (HF={self.state.initial_health_factor}): ${target_debt:,.2f}")
+        print(f"   🎯 Target Debt (HF={self.state.target_health_factor}): ${target_debt:,.2f}")
         print(f"   ➕ Additional MOET to borrow: ${additional_moet_needed:,.2f}")
         
         if additional_moet_needed <= 0:
@@ -277,9 +344,9 @@ class HighTideAgent(BaseAgent):
         
         # FIXED: Stop when above rebalancing threshold, not when reaching exact target
         # Agent should AIM for target HF but STOP when safe (above rebalancing HF)
-        while (self.state.health_factor < self.state.rebalancing_health_factor and 
+        while (self.state.health_factor < self.state.rebalancing_health_factor and
                self.state.yield_token_manager.yield_tokens and
-               rebalance_cycle < 3):  # Max 3 cycles - should only need 1-2 in practice
+               rebalance_cycle < self.max_rebalance_cycles):  # Configurable max cycles (default 3, FCM mode: 1)
             
             rebalance_cycle += 1
             print(f"        🔄 Rebalance Cycle {rebalance_cycle}: Need ${moet_needed:,.2f} MOET")

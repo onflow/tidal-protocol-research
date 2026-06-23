@@ -63,7 +63,7 @@ class AaveProtocolEngine(TidalProtocolEngine):
         super().__init__(config)
         self.aave_config = config
         
-        # AAVE liquidation parameters (but uses Uniswap V3 for swaps)
+        # AAVE liquidation parameters
         self._setup_aave_liquidation_pools()
         
         # Initialize AAVE specific components

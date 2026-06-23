@@ -1034,7 +1034,11 @@ class HighTideVaultEngine(TidalProtocolEngine):
                 "deleveraging_events_count": portfolio.get("deleveraging_events_count", 0),
                 "total_deleveraging_sales": portfolio.get("total_deleveraging_sales", 0),
                 # Add flag to indicate this uses real engine data
-                "data_source": "engine_real_swaps"
+                "data_source": "engine_real_swaps",
+                # FCM cost-estimation transaction counters
+                "hc_no_action_count": getattr(agent.state, 'hc_no_action_count', 0),
+                "sr_count": getattr(agent.state, 'sr_count', 0),
+                "er_count": getattr(agent.state, 'er_count', 0),
             }
             
             agent_outcomes.append(outcome)
